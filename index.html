@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Framed Trails</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #111213;
+    --panel: #1a1b1e;
+    --panel2: #222428;
+    --border: #2e3035;
+    --text: #f0f0f0;
+    --muted: #888;
+    --accent: #e63946;
+    --input-bg: #16181c;
+    --radius: 8px;
+  }
+
+  body {
+    font-family: 'Microsoft Tai Le', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    width: 300px;
+    min-width: 300px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    z-index: 10;
+  }
+
+  .sidebar-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .logo-text h1 {
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 18px;
+    letter-spacing: 1px;
+    line-height: 1.1;
+  }
+
+  .logo-text p {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+
+  .section {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .drop-zone {
+    background: var(--input-bg);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(230,57,70,0.06);
+  }
+
+  .drop-zone .dz-icon { font-size: 24px; margin-bottom: 6px; }
+  .drop-zone .dz-main { font-size: 13px; font-weight: 500; }
+  .drop-zone .dz-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  .file-loaded {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #4ade80;
+    display: none;
+    align-items: center;
+    gap: 5px;
+  }
+  .file-loaded.visible { display: flex; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+
+  .style-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .style-btn {
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .style-btn:hover { border-color: var(--accent); color: var(--text); }
+  .style-btn.active { border-color: var(--accent); background: rgba(230,57,70,0.12); color: var(--text); font-weight: 500; }
+
+  .swatch-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .swatch {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .swatch:hover { transform: scale(1.15); }
+  .swatch.active { border-color: white; transform: scale(1.1); }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid white;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: right;
+  }
+
+  /* Size Buttons */
+  .size-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .size-btn {
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 10px 8px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .size-btn:hover { border-color: var(--accent); }
+  .size-btn.active { border-color: var(--accent); background: rgba(230,57,70,0.12); }
+
+  .size-btn .size-preview {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .size-btn.active .size-preview {
+    background: rgba(230,57,70,0.25);
+    border-color: var(--accent);
+  }
+
+  .size-btn .size-label { font-size: 12px; font-weight: 500; color: var(--muted); line-height: 1.1; }
+  .size-btn.active .size-label { color: var(--text); }
+  .size-btn .size-sub { font-size: 10px; color: var(--muted); opacity: 0.7; }
+
+  .center-btn {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: center;
+  }
+  .center-btn:hover { border-color: var(--accent); background: rgba(230,57,70,0.08); }
+  .center-btn:active { transform: scale(0.98); }
+
+  /* Toggle Switch */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .toggle-label { font-size: 13px; color: var(--text); }
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .toggle-switch input { display: none; }
+
+  .toggle-track {
+    display: block;
+    width: 38px;
+    height: 22px;
+    background: var(--border);
+    border-radius: 11px;
+    transition: background 0.2s;
+    position: relative;
+  }
+  .toggle-switch input:checked + .toggle-track { background: var(--accent); }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
+
+  /* Unit pill toggle */
+  .unit-toggle {
+    display: flex;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .unit-toggle button {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .unit-toggle button.active {
+    background: var(--accent);
+    color: white;
+  }
+
+  /* Print Button */
+  .print-btn {
+    margin: 16px 20px 20px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px;
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    transition: background 0.2s, transform 0.1s;
+  }
+  .print-btn:hover { background: #c62d39; }
+  .print-btn:active { transform: scale(0.98); }
+
+  .export-format-row {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    margin: -4px 20px 10px;
+  }
+
+  .export-fmt-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .export-fmt-label input { accent-color: var(--accent); cursor: pointer; }
+
+  .print-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .tip {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 0 20px 16px;
+    line-height: 1.5;
+  }
+
+  kbd {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-family: monospace;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f5f5f0;
+  }
+
+  .poster-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow: hidden;
+    background: #e8e8e3;
+  }
+
+  .poster {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
+    aspect-ratio: 8.5 / 11;
+    max-height: calc(100vh - 48px);
+    max-width: calc((100vh - 48px) * 0.7727);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .poster-header {
+    padding: 22px 44px 10px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .poster-title {
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 42px;
+    letter-spacing: 2px;
+    color: #111;
+    line-height: 1;
+  }
+
+  .poster-subtitle {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  .map-container {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    margin: 0 44px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+  }
+
+  #map { width: 100%; height: 100%; min-height: 300px; }
+
+  .elevation-wrap { padding: 0 44px 0 20px; flex-shrink: 0; }
+  #elevation-canvas { width: 100%; height: 70px; display: block; }
+
+  .stats-bar {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 44px 20px;
+    flex-shrink: 0;
+  }
+
+  .stat { text-align: center; }
+
+  .stat-label {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .stat-value {
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 36px;
+    color: #111;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .stat-unit { font-size: 11px; color: #888; margin-left: 2px; }
+
+  /* CAPTCHA */
+  .captcha-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .captcha-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .captcha-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 28px 24px;
+    width: 300px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transform: translateY(8px);
+    transition: transform 0.2s;
+  }
+  .captcha-overlay.visible .captcha-box { transform: translateY(0); }
+
+  .captcha-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+
+  .captcha-icon {
+    width: 32px; height: 32px;
+    background: rgba(230,57,70,0.15);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .captcha-header h2 { font-family: 'Microsoft Tai Le', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--text); }
+  .captcha-header p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .captcha-question {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  .captcha-question .math { font-family: 'Microsoft Tai Le', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--text); }
+  .captcha-question .math span { color: var(--accent); }
+
+  .captcha-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+
+  .captcha-input-row input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 22px;
+    padding: 8px 12px;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s;
+  }
+  .captcha-input-row input:focus { border-color: var(--accent); }
+  .captcha-input-row input.error { border-color: #e63946; animation: shake 0.3s; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .captcha-submit {
+    flex-shrink: 0;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .captcha-submit:hover { background: #c62d39; }
+
+  .captcha-error { font-size: 11px; color: var(--accent); text-align: center; min-height: 16px; margin-bottom: 4px; }
+
+  .captcha-cancel {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 6px;
+    transition: color 0.15s;
+  }
+  .captcha-cancel:hover { color: var(--text); }
+
+  .map-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f8f5;
+    color: #bbb;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s;
+  }
+  .map-empty.hidden { opacity: 0; pointer-events: none; }
+  .map-empty .empty-icon { font-size: 48px; margin-bottom: 10px; opacity: 0.4; }
+  .map-empty p { font-size: 13px; }
+
+  @media print {
+    .sidebar { display: none; }
+    body { height: auto; }
+    .main { background: white; height: 100vh; }
+    .poster-wrap { padding: 0; background: white; height: 100vh; }
+    .poster { box-shadow: none; border-radius: 0; max-width: 100%; max-height: 100%; width: 100%; height: 100%; }
+  }
+</style>
+<style id="printPageStyle">@page { size: 8.5in 11in; margin: 0; }</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-mark">⛰</div>
+    <div class="logo-text">
+      <h1>Framed Trails</h1>
+      <p>Build your own Map<br>Upload GPX · Customize · Print</p>
+    </div>
+  </div>
+
+  <!-- GPX Upload -->
+  <div class="section">
+    <div class="section-label">GPX File</div>
+    <div class="drop-zone" id="dropZone">
+      <div class="dz-icon">📁</div>
+      <div class="dz-main">Drop your GPX file here</div>
+      <div class="dz-sub">or click to browse</div>
+    </div>
+    <input type="file" id="gpxFile" accept=".gpx" style="display:none">
+    <div class="file-loaded" id="fileLoaded">
+      <span>✓</span><span id="fileName"></span>
+    </div>
+  </div>
+
+  <!-- Map View -->
+  <div class="section">
+    <div class="section-label">Map View</div>
+    <button class="center-btn" id="centerMapBtn">⌖ Center on Trail</button>
+  </div>
+
+  <!-- Text -->
+  <div class="section">
+    <div class="section-label">Text</div>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="titleInput" value="My Trail" placeholder="Trail name">
+    </div>
+    <div class="field">
+      <label>Subtitle</label>
+      <input type="text" id="subtitleInput" value="" placeholder="Location or region">
+    </div>
+  </div>
+
+  <!-- Units -->
+  <div class="section">
+    <div class="section-label">Units</div>
+    <div class="field">
+      <label>Distance</label>
+      <div class="unit-toggle">
+        <button id="unitKm" class="active">km</button>
+        <button id="unitMi">mi</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Elevation</label>
+      <div class="unit-toggle">
+        <button id="unitM" class="active">m</button>
+        <button id="unitFt">ft</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Size -->
+  <div class="section">
+    <div class="section-label">Print Size</div>
+    <div class="size-grid">
+      <button class="size-btn active" data-w="8.5" data-h="11">
+        <div class="size-preview" style="width:32px;height:41px;border-radius:2px;"></div>
+        <span class="size-label">8.5 × 11"</span>
+        <span class="size-sub">Letter</span>
+      </button>
+      <button class="size-btn" data-w="13" data-h="19">
+        <div class="size-preview" style="width:29px;height:42px;border-radius:2px;"></div>
+        <span class="size-label">13 × 19"</span>
+        <span class="size-sub">Super B</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Map Style -->
+  <div class="section">
+    <div class="section-label">Map Style</div>
+    <div class="style-grid">
+      <button class="style-btn active" data-style="streets-v12">Streets</button>
+      <button class="style-btn" data-style="outdoors-v12">Outdoors</button>
+      <button class="style-btn" data-style="satellite-streets-v12">Satellite</button>
+      <button class="style-btn" data-style="light-v11">Light</button>
+      <button class="style-btn" data-style="dark-v11">Dark</button>
+      <button class="style-btn" data-style="navigation-day-v1">Navigation</button>
+    </div>
+  </div>
+
+  <!-- Route -->
+  <div class="section">
+    <div class="section-label">Route</div>
+    <div class="field">
+      <label>Color</label>
+      <div class="swatch-row">
+        <div class="swatch active" style="background:#e63946" data-color="#e63946"></div>
+        <div class="swatch" style="background:#f77f00" data-color="#f77f00"></div>
+        <div class="swatch" style="background:#f4d03f" data-color="#f4d03f"></div>
+        <div class="swatch" style="background:#4cc9f0" data-color="#4cc9f0"></div>
+        <div class="swatch" style="background:#9b5de5" data-color="#9b5de5"></div>
+        <div class="swatch" style="background:#111" data-color="#111"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Line Width</label>
+      <div class="slider-row">
+        <input type="range" id="lineWidth" min="1" max="8" value="3">
+        <span class="slider-val" id="lineWidthVal">3</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Markers</label>
+      <div class="toggle-row">
+        <span class="toggle-label">Show Start / Finish</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="markersToggle" checked>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Stats</label>
+      <div class="toggle-row" style="margin-bottom:8px">
+        <span class="toggle-label">Show Distance</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="distanceToggle" checked>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Show Elevation</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="elevationToggle" checked>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="toggle-row" style="margin-top:8px">
+        <span class="toggle-label">Show Time</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="timeToggle" checked>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div id="timeInputWrap" style="margin-top:8px">
+        <label>Custom Time</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="timeHr" min="0" max="99" placeholder="0" style="width:46px;text-align:center">
+          <span style="font-size:11px;color:var(--muted)">hr</span>
+          <input type="number" id="timeMin" min="0" max="59" placeholder="0" style="width:46px;text-align:center">
+          <span style="font-size:11px;color:var(--muted)">min</span>
+          <input type="number" id="timeSec" min="0" max="59" placeholder="0" style="width:46px;text-align:center">
+          <span style="font-size:11px;color:var(--muted)">sec</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="print-btn" id="exportBtn" onclick="exportPoster()">EXPORT POSTER</button>
+  <div class="export-format-row">
+    <label class="export-fmt-label">
+      <input type="radio" name="exportFmt" value="png" checked> PNG
+    </label>
+    <label class="export-fmt-label">
+      <input type="radio" name="exportFmt" value="pdf"> PDF
+    </label>
+  </div>
+  <p class="tip">Exports the poster as a high-res file ready for print. Click the title or subtitle to edit directly on the poster.</p>
+</aside>
+
+<main class="main">
+  <div class="poster-wrap">
+    <div class="poster" id="poster">
+      <div class="poster-header">
+        <div class="poster-title" id="posterTitle" contenteditable="true" spellcheck="false">My Trail</div>
+        <div class="poster-subtitle" id="posterSubtitle" contenteditable="true" spellcheck="false">Upload a GPX to get started</div>
+      </div>
+      <div class="map-container">
+        <div class="map-empty" id="mapEmpty">
+          <div class="empty-icon">🗺️</div>
+          <p>Upload a GPX file to see your trail</p>
+        </div>
+        <div id="map"></div>
+      </div>
+      <div class="elevation-wrap">
+        <canvas id="elevation-canvas"></canvas>
+      </div>
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="stat-label">Distance</div>
+          <div class="stat-value" id="statDist">—<span class="stat-unit" id="statDistUnit">km</span></div>
+        </div>
+        <div class="stat" id="statTimeWrap">
+          <div class="stat-label">Time</div>
+          <div class="stat-value" id="statTime">—<span class="stat-unit">hr</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Elevation</div>
+          <div class="stat-value" id="statElev">—<span class="stat-unit" id="statElevUnit">m</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- CAPTCHA MODAL -->
+<div class="captcha-overlay" id="captchaOverlay">
+  <div class="captcha-box">
+    <div class="captcha-header">
+      <div class="captcha-icon">🔒</div>
+      <div>
+        <h2>Verify You're Human</h2>
+        <p>Solve the puzzle to upload your file</p>
+      </div>
+    </div>
+    <div class="captcha-question">
+      <div class="math" id="captchaMath"></div>
+    </div>
+    <div class="captcha-input-row">
+      <input type="number" id="captchaAnswer" placeholder="?" autocomplete="off">
+      <button class="captcha-submit" id="captchaSubmit">OK</button>
+    </div>
+    <div class="captcha-error" id="captchaError"></div>
+    <button class="captcha-cancel" id="captchaCancel">Cancel</button>
+  </div>
+</div>
+
+<script>
+const MAPBOX_TOKEN = 'pk.eyJ1IjoibHVjNDAxIiwiYSI6ImNtbjBweDZlcDBwbDcycHE0aXc1MGUwNmIifQ.QHoj0A7MF23Hr4zvTAOITA';
+mapboxgl.accessToken = MAPBOX_TOKEN;
+
+let map, routeColor = '#e63946', lineWidthVal = 3;
+let gpxCoords = [], gpxElevations = [];
+let useKm = true, useM = true;
+
+map = new mapboxgl.Map({
+  container: 'map',
+  style: 'mapbox://styles/mapbox/streets-v12',
+  center: [-63.6, 44.65],
+  zoom: 8,
+  attributionControl: false,
+  preserveDrawingBuffer: true
+});
+
+// ── CAPTCHA ──
+let captchaCorrectAnswer = 0, pendingFile = null, captchaMode = 'click';
+
+function generateCaptcha() {
+  const ops = ['+', '-', '×'];
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let a, b;
+  if (op === '+') { a = Math.floor(Math.random() * 20) + 1; b = Math.floor(Math.random() * 20) + 1; captchaCorrectAnswer = a + b; }
+  else if (op === '-') { a = Math.floor(Math.random() * 20) + 10; b = Math.floor(Math.random() * a) + 1; captchaCorrectAnswer = a - b; }
+  else { a = Math.floor(Math.random() * 9) + 2; b = Math.floor(Math.random() * 9) + 2; captchaCorrectAnswer = a * b; }
+  document.getElementById('captchaMath').innerHTML = `${a} <span>${op}</span> ${b} = ?`;
+}
+
+function showCaptcha(mode, file) {
+  captchaMode = mode; pendingFile = file || null;
+  generateCaptcha();
+  document.getElementById('captchaAnswer').value = '';
+  document.getElementById('captchaError').textContent = '';
+  document.getElementById('captchaAnswer').classList.remove('error');
+  document.getElementById('captchaOverlay').classList.add('visible');
+  setTimeout(() => document.getElementById('captchaAnswer').focus(), 200);
+}
+
+function hideCaptcha() {
+  document.getElementById('captchaOverlay').classList.remove('visible');
+  pendingFile = null;
+}
+
+document.getElementById('captchaSubmit').addEventListener('click', verifyCaptcha);
+document.getElementById('captchaAnswer').addEventListener('keydown', e => { if (e.key === 'Enter') verifyCaptcha(); });
+document.getElementById('captchaCancel').addEventListener('click', hideCaptcha);
+document.getElementById('captchaOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) hideCaptcha(); });
+
+function verifyCaptcha() {
+  const val = parseInt(document.getElementById('captchaAnswer').value);
+  if (val === captchaCorrectAnswer) {
+    hideCaptcha();
+    if (captchaMode === 'click') gpxFileInput.click();
+    else if (captchaMode === 'drop' && pendingFile) processFile(pendingFile);
+  } else {
+    const input = document.getElementById('captchaAnswer');
+    document.getElementById('captchaError').textContent = 'Incorrect — try again!';
+    input.classList.add('error');
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+    generateCaptcha();
+  }
+}
+
+// ── GPX UPLOAD ──
+const dropZone = document.getElementById('dropZone');
+const gpxFileInput = document.getElementById('gpxFile');
+
+dropZone.addEventListener('click', () => showCaptcha('click', null));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) showCaptcha('drop', file);
+});
+
+gpxFileInput.addEventListener('change', e => {
+  if (e.target.files[0]) processFile(e.target.files[0]);
+});
+
+function processFile(file) {
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileLoaded').classList.add('visible');
+  const reader = new FileReader();
+  reader.onload = e => parseGPX(e.target.result);
+  reader.readAsText(file);
+}
+
+function parseGPX(text) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(text, 'application/xml');
+  const trkpts = xml.querySelectorAll('trkpt');
+  if (!trkpts.length) { alert('No track points found in GPX file.'); return; }
+
+  gpxCoords = []; gpxElevations = [];
+  trkpts.forEach(pt => {
+    const lat = parseFloat(pt.getAttribute('lat'));
+    const lon = parseFloat(pt.getAttribute('lon'));
+    const eleEl = pt.querySelector('ele');
+    gpxCoords.push([lon, lat]);
+    gpxElevations.push(eleEl ? parseFloat(eleEl.textContent) : 0);
+  });
+
+  document.getElementById('mapEmpty').classList.add('hidden');
+  renderRoute();
+  renderMarkers();
+  updateStats();
+  drawElevation();
+}
+
+// ── DISTANCE / ELEVATION HELPERS ──
+function calcDistanceKm(coords) {
+  let total = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const [lon1, lat1] = coords[i - 1], [lon2, lat2] = coords[i];
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    total += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  return total;
+}
+
+function calcElevGainM(elevs) {
+  let gain = 0;
+  for (let i = 1; i < elevs.length; i++) {
+    const diff = elevs[i] - elevs[i-1];
+    if (diff > 0) gain += diff;
+  }
+  return gain;
+}
+
+// Estimate moving time using Naismith's rule: 5km/hr + 1min per 10m gain
+function calcMovingTimeHr(distKm, gainM) {
+  return (distKm / 5) + (gainM / 10 / 60);
+}
+
+// ── UNIT DISPLAY ──
+function updateStats() {
+  if (!gpxCoords.length) return;
+  const distKm = calcDistanceKm(gpxCoords);
+  const gainM  = calcElevGainM(gpxElevations);
+
+  const distVal  = useKm ? distKm.toFixed(2) : (distKm * 0.621371).toFixed(2);
+  const distUnit = useKm ? 'km' : 'mi';
+  const elevVal  = useM  ? Math.round(gainM).toLocaleString('en-US') : Math.round(gainM * 3.28084).toLocaleString('en-US');
+  const elevUnit = useM  ? 'm' : 'ft';
+
+  document.getElementById('statDist').innerHTML = `${distVal}<span class="stat-unit">${distUnit}</span>`;
+  document.getElementById('statElev').innerHTML = `${elevVal}<span class="stat-unit">${elevUnit}</span>`;
+
+  const totalHr = calcMovingTimeHr(distKm, gainM);
+  const hrs = Math.floor(totalHr);
+  const mins = Math.floor((totalHr - hrs) * 60);
+  const secs = Math.round(((totalHr - hrs) * 60 - mins) * 60);
+  const mm = String(mins).padStart(2, '0');
+  const ss = String(secs).padStart(2, '0');
+  document.getElementById('statTime').innerHTML = `${hrs}:${mm}:${ss}`;
+}
+
+document.getElementById('unitKm').addEventListener('click', () => {
+  useKm = true;
+  document.getElementById('unitKm').classList.add('active');
+  document.getElementById('unitMi').classList.remove('active');
+  updateStats();
+  if (gpxElevations.length) drawElevation();
+});
+document.getElementById('unitMi').addEventListener('click', () => {
+  useKm = false;
+  document.getElementById('unitMi').classList.add('active');
+  document.getElementById('unitKm').classList.remove('active');
+  updateStats();
+  if (gpxElevations.length) drawElevation();
+});
+document.getElementById('unitM').addEventListener('click', () => {
+  useM = true;
+  document.getElementById('unitM').classList.add('active');
+  document.getElementById('unitFt').classList.remove('active');
+  updateStats();
+  if (gpxElevations.length) drawElevation();
+});
+document.getElementById('unitFt').addEventListener('click', () => {
+  useM = false;
+  document.getElementById('unitFt').classList.add('active');
+  document.getElementById('unitM').classList.remove('active');
+  updateStats();
+  if (gpxElevations.length) drawElevation();
+});
+
+// ── ROUTE ──
+function renderRoute() {
+  const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates: gpxCoords } };
+  if (map.getSource('route')) {
+    map.getSource('route').setData(geojson);
+  } else {
+    map.on('load', () => addRouteLayer(geojson));
+    if (map.loaded()) addRouteLayer(geojson);
+  }
+  const lats = gpxCoords.map(c => c[1]), lons = gpxCoords.map(c => c[0]);
+  map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 50, duration: 800 });
+}
+
+function addRouteLayer(geojson) {
+  if (map.getSource('route')) {
+    map.getSource('route').setData(geojson);
+    map.setPaintProperty('route-line', 'line-color', routeColor);
+    map.setPaintProperty('route-line', 'line-width', lineWidthVal);
+    return;
+  }
+  // Find the first symbol layer whose id suggests it is a label/place/name
+  // This puts the GPX above all road lines but below all text labels
+  const layers = map.getStyle().layers;
+  const labelLayer = layers.find(l =>
+    l.type === 'symbol' && (
+      l.id.includes('label') ||
+      l.id.includes('place') ||
+      l.id.includes('poi') ||
+      l.id.includes('transit') ||
+      l.id.includes('airport') ||
+      l.id.includes('waterway-name') ||
+      l.id.includes('natural-line') ||
+      l.id.includes('road-number')
+    )
+  );
+  // Fall back to very first symbol layer
+  const insertBefore = (labelLayer || layers.find(l => l.type === 'symbol'))?.id;
+  map.addSource('route', { type: 'geojson', data: geojson });
+  map.addLayer({
+    id: 'route-line', type: 'line', source: 'route',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': routeColor, 'line-width': lineWidthVal, 'line-opacity': 0.95 }
+  }, insertBefore);
+}
+
+function updateRouteStyle() {
+  if (map.getLayer('route-line')) {
+    map.setPaintProperty('route-line', 'line-color', routeColor);
+    map.setPaintProperty('route-line', 'line-width', lineWidthVal);
+  }
+}
+
+// ── MARKERS ──
+let startMarker = null, finishMarker = null;
+
+function makeMarkerEl(type) {
+  const isStart = type === 'start';
+  const el = document.createElement('div');
+  el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:default;';
+  const pin = document.createElement('div');
+  pin.style.cssText = `width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${isStart ? '#2dc653' : '#e63946'};border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;`;
+  const icon = document.createElement('div');
+  icon.style.cssText = 'transform:rotate(45deg);line-height:1;color:white;font-weight:700;font-size:13px;';
+  icon.style.fontFamily = "'Microsoft Tai Le', sans-serif";
+  icon.textContent = isStart ? 'S' : 'F';
+  pin.appendChild(icon);
+  el.appendChild(pin);
+  return el;
+}
+
+function renderMarkers() {
+  if (!gpxCoords.length) return;
+  if (startMarker) { startMarker.remove(); startMarker = null; }
+  if (finishMarker) { finishMarker.remove(); finishMarker = null; }
+  if (!document.getElementById('markersToggle').checked) return;
+  startMarker = new mapboxgl.Marker({ element: makeMarkerEl('start'), anchor: 'bottom' }).setLngLat(gpxCoords[0]).addTo(map);
+  finishMarker = new mapboxgl.Marker({ element: makeMarkerEl('finish'), anchor: 'bottom' }).setLngLat(gpxCoords[gpxCoords.length - 1]).addTo(map);
+}
+
+document.getElementById('markersToggle').addEventListener('change', renderMarkers);
+
+document.getElementById('distanceToggle').addEventListener('change', e => {
+  document.querySelector('.stat:has(#statDist)').style.display = e.target.checked ? '' : 'none';
+});
+document.getElementById('elevationToggle').addEventListener('change', e => {
+  document.querySelector('.stat:has(#statElev)').style.display = e.target.checked ? '' : 'none';
+});
+document.getElementById('timeToggle').addEventListener('change', e => {
+  document.getElementById('statTimeWrap').style.display = e.target.checked ? '' : 'none';
+  document.getElementById('timeInputWrap').style.display = e.target.checked ? '' : 'none';
+});
+
+function updateTimeDisplay() {
+  const hrs = parseInt(document.getElementById('timeHr').value) || 0;
+  const mins = parseInt(document.getElementById('timeMin').value) || 0;
+  const secs = parseInt(document.getElementById('timeSec').value) || 0;
+  if (hrs === 0 && mins === 0 && secs === 0) return; // keep Naismith estimate if blank
+  const h = String(hrs);
+  const mm = String(mins).padStart(2, '0');
+  const ss = String(secs).padStart(2, '0');
+  document.getElementById('statTime').innerHTML = `${h}:${mm}:${ss}`;
+}
+
+document.getElementById('timeHr').addEventListener('input', updateTimeDisplay);
+document.getElementById('timeMin').addEventListener('input', updateTimeDisplay);
+document.getElementById('timeSec').addEventListener('input', updateTimeDisplay);
+
+// ── ELEVATION CHART ──
+function drawElevation() {
+  const canvas = document.getElementById('elevation-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.offsetWidth || 760, h = canvas.offsetHeight || 70;
+  canvas.width = w * devicePixelRatio; canvas.height = h * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const elevs = gpxElevations;
+  if (!elevs.length) return;
+  const minM = Math.min(...elevs), maxM = Math.max(...elevs), range = maxM - minM || 1;
+  const pad = { top: 8, bottom: 18, left: 44, right: 0 };
+  const chartW = w - pad.left - pad.right, chartH = h - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Y axis labels (convert if needed)
+  ctx.fillStyle = '#aaa';
+  ctx.font = '9px Microsoft Tai Le, sans-serif';
+  ctx.textAlign = 'right';
+  [0, 0.5, 1].forEach(t => {
+    const rawM = minM + range * t;
+    const rawVal = useM ? rawM : rawM * 3.28084;
+    const label = Math.round(rawVal / 50) * 50;
+    const y = pad.top + chartH * (1 - t);
+    ctx.fillText(label, pad.left - 3, y + 3);
+    ctx.strokeStyle = '#e5e5e0'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
+  });
+
+  // Line
+  ctx.beginPath();
+  elevs.forEach((e, i) => {
+    const x = pad.left + (i / (elevs.length - 1)) * chartW;
+    const y = pad.top + chartH * (1 - (e - minM) / range);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
+
+  // Fill
+  ctx.lineTo(pad.left + chartW, pad.top + chartH);
+  ctx.lineTo(pad.left, pad.top + chartH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
+  grad.addColorStop(0, routeColor + '55'); grad.addColorStop(1, routeColor + '08');
+  ctx.fillStyle = grad; ctx.fill();
+
+  // X axis distance labels (convert if needed)
+  ctx.fillStyle = '#aaa'; ctx.textAlign = 'center';
+  ctx.font = '9px Microsoft Tai Le, sans-serif';
+  const totalKm = calcDistanceKm(gpxCoords);
+  const totalDisplay = useKm ? totalKm : totalKm * 0.621371;
+  const steps = Math.min(6, Math.floor(totalDisplay));
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    ctx.fillText(Math.round(totalDisplay * t), pad.left + t * chartW, h - 3);
+  }
+}
+
+// ── CONTROLS ──
+['titleInput', 'subtitleInput'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    document.getElementById(id === 'titleInput' ? 'posterTitle' : 'posterSubtitle').textContent = e.target.value;
+  });
+});
+document.getElementById('posterTitle').addEventListener('input', e => { document.getElementById('titleInput').value = e.target.textContent; });
+document.getElementById('posterSubtitle').addEventListener('input', e => { document.getElementById('subtitleInput').value = e.target.textContent; });
+
+document.querySelectorAll('.style-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    map.setStyle('mapbox://styles/mapbox/' + btn.dataset.style);
+    map.once('styledata', () => {
+      if (gpxCoords.length) addRouteLayer({ type: 'Feature', geometry: { type: 'LineString', coordinates: gpxCoords } });
+    });
+  });
+});
+
+document.querySelectorAll('.swatch').forEach(swatch => {
+  swatch.addEventListener('click', () => {
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+    swatch.classList.add('active');
+    routeColor = swatch.dataset.color;
+    updateRouteStyle();
+    if (gpxElevations.length) drawElevation();
+  });
+});
+
+const lineWidthSlider = document.getElementById('lineWidth');
+const lineWidthDisplay = document.getElementById('lineWidthVal');
+lineWidthSlider.addEventListener('input', () => {
+  lineWidthVal = parseInt(lineWidthSlider.value);
+  lineWidthDisplay.textContent = lineWidthVal;
+  updateRouteStyle();
+});
+
+document.getElementById('centerMapBtn').addEventListener('click', () => {
+  if (!gpxCoords.length) return;
+  const lats = gpxCoords.map(c => c[1]), lons = gpxCoords.map(c => c[0]);
+  map.resize();
+  map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 50, duration: 600 });
+});
+
+window.addEventListener('resize', () => { if (gpxElevations.length) drawElevation(); });
+
+// ── EXPORT ──
+async function exportPoster() {
+  const btn = document.getElementById('exportBtn');
+  const fmt = document.querySelector('input[name="exportFmt"]:checked').value;
+  const titleText = document.getElementById('posterTitle').textContent.trim() || 'trail-poster';
+  const safeName = titleText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  btn.disabled = true;
+  btn.textContent = 'EXPORTING…';
+
+  try {
+    const poster = document.getElementById('poster');
+    const origBorderRadius = poster.style.borderRadius;
+    const origBoxShadow = poster.style.boxShadow;
+    poster.style.borderRadius = '0';
+    poster.style.boxShadow = 'none';
+
+    const canvas = await html2canvas(poster, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      backgroundColor: '#ffffff'
+    });
+
+    poster.style.borderRadius = origBorderRadius;
+    poster.style.boxShadow = origBoxShadow;
+
+    if (fmt === 'png') {
+      const link = document.createElement('a');
+      link.download = `${safeName}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } else {
+      const { jsPDF } = window.jspdf;
+      const activeSize = document.querySelector('.size-btn.active');
+      const pw = activeSize ? parseFloat(activeSize.dataset.w) : 8.5;
+      const ph = activeSize ? parseFloat(activeSize.dataset.h) : 11;
+      const orientation = pw > ph ? 'landscape' : 'portrait';
+      const pdf = new jsPDF({ orientation, unit: 'in', format: [pw, ph] });
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pw, ph);
+      pdf.save(`${safeName}.pdf`);
+    }
+  } catch (err) {
+    console.error('Export failed:', err);
+    alert('Export failed — check the console for details.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'EXPORT POSTER';
+  }
+}
+
+// ── PRINT SIZE ──
+const poster = document.getElementById('poster');
+
+function applyPrintSize(w, h) {
+  const ratio = w / h;
+  poster.style.aspectRatio = `${w} / ${h}`;
+  poster.style.maxWidth = `calc((100vh - 48px) * ${ratio.toFixed(6)})`;
+  document.getElementById('printPageStyle').textContent = `@page { size: ${w}in ${h}in; margin: 0; }`;
+}
+
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyPrintSize(parseFloat(btn.dataset.w), parseFloat(btn.dataset.h));
+    setTimeout(() => map.resize(), 50);
+    if (gpxElevations.length) setTimeout(() => drawElevation(), 60);
+  });
+});
+</script>
+
+</body>
+</html>
