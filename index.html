@@ -7,7 +7,6 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -331,9 +330,9 @@
     color: white;
   }
 
-  /* Print Button */
+  /* Purchase Button */
   .print-btn {
-    margin: 16px 20px 20px;
+    margin: 16px 20px 8px;
     background: var(--accent);
     color: white;
     border: none;
@@ -345,29 +344,13 @@
     cursor: pointer;
     width: calc(100% - 40px);
     transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
   .print-btn:hover { background: #c62d39; }
   .print-btn:active { transform: scale(0.98); }
-
-  .export-format-row {
-    display: flex;
-    gap: 18px;
-    justify-content: center;
-    margin: -4px 20px 10px;
-  }
-
-  .export-fmt-label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    color: var(--muted);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .export-fmt-label input { accent-color: var(--accent); cursor: pointer; }
-
   .print-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -377,8 +360,149 @@
   .tip {
     font-size: 11px;
     color: var(--muted);
-    padding: 0 20px 16px;
+    padding: 4px 20px 16px;
     line-height: 1.5;
+  }
+
+  /* ── PURCHASE PREVIEW MODAL ── */
+  .purchase-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .purchase-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .purchase-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 420px;
+    max-width: calc(100vw - 40px);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+    transform: translateY(10px);
+    transition: transform 0.25s;
+    overflow: hidden;
+  }
+  .purchase-overlay.visible .purchase-box { transform: translateY(0); }
+
+  .purchase-preview-img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    display: block;
+    background: #1a1a1a;
+  }
+
+  .purchase-body { padding: 22px 24px 20px; }
+
+  .purchase-title {
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .purchase-subtitle-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .purchase-details {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  .purchase-details strong { color: var(--text); font-weight: 600; }
+
+  .copy-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .copy-details-btn {
+    flex: 1;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    text-align: left;
+  }
+  .copy-details-btn:hover { color: var(--text); border-color: var(--muted); }
+  .copy-details-btn.copied { color: #4ade80; border-color: #4ade80; }
+
+  .upload-status {
+    font-size: 11px;
+    color: var(--muted);
+    min-height: 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .upload-status.ok { color: #4ade80; }
+  .upload-status.err { color: var(--accent); }
+
+  .purchase-actions { display: flex; gap: 10px; }
+
+  .btn-buy {
+    flex: 1;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 11px;
+    font-family: 'Microsoft Tai Le', sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-buy:hover { background: #c62d39; }
+  .btn-buy:active { transform: scale(0.97); }
+  .btn-buy:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+  .btn-cancel-purchase {
+    background: var(--panel2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 16px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .btn-cancel-purchase:hover { color: var(--text); border-color: var(--muted); }
+
+  .purchase-note {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.5;
+    opacity: 0.7;
   }
 
   kbd {
@@ -778,16 +902,10 @@
     </div>
   </div>
 
-  <button class="print-btn" id="exportBtn" onclick="exportPoster()">EXPORT POSTER</button>
-  <div class="export-format-row">
-    <label class="export-fmt-label">
-      <input type="radio" name="exportFmt" value="png" checked> PNG
-    </label>
-    <label class="export-fmt-label">
-      <input type="radio" name="exportFmt" value="pdf"> PDF
-    </label>
-  </div>
-  <p class="tip">Exports the poster as a high-res file ready for print. Click the title or subtitle to edit directly on the poster.</p>
+  <button class="print-btn" id="purchaseBtn" onclick="initiatePurchase()">
+    <span>🛒</span> ORDER PRINT
+  </button>
+  <p class="tip">Preview your poster before ordering. Your GPX file and design details are sent automatically with your order.</p>
 </aside>
 
 <main class="main">
@@ -844,6 +962,27 @@
     </div>
     <div class="captcha-error" id="captchaError"></div>
     <button class="captcha-cancel" id="captchaCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- PURCHASE PREVIEW MODAL -->
+<div class="purchase-overlay" id="purchaseOverlay">
+  <div class="purchase-box">
+    <img class="purchase-preview-img" id="purchasePreviewImg" src="" alt="Poster preview">
+    <div class="purchase-body">
+      <div class="purchase-title" id="purchaseModalTitle">My Trail</div>
+      <div class="purchase-subtitle-text" id="purchaseModalSubtitle"></div>
+      <div class="purchase-details" id="purchaseModalDetails"></div>
+      <div class="copy-row">
+        <button class="copy-details-btn" id="copyDetailsBtn">📋 Copy order details to clipboard</button>
+      </div>
+      <div class="upload-status" id="uploadStatus"></div>
+      <div class="purchase-actions">
+        <button class="btn-cancel-purchase" id="purchaseCancelBtn">Back</button>
+        <button class="btn-buy" id="purchaseConfirmBtn">Proceed to Checkout →</button>
+      </div>
+      <div class="purchase-note">You'll be taken to our store to complete your order.<br>Your GPX file and poster details are included automatically.</div>
+    </div>
   </div>
 </div>
 
@@ -932,6 +1071,7 @@ gpxFileInput.addEventListener('change', e => {
 });
 
 function processFile(file) {
+  gpxFileRef = file; // store for Azure upload at purchase time
   document.getElementById('fileName').textContent = file.name;
   document.getElementById('fileLoaded').classList.add('visible');
   const reader = new FileReader();
@@ -1254,57 +1394,277 @@ document.getElementById('centerMapBtn').addEventListener('click', () => {
 
 window.addEventListener('resize', () => { if (gpxElevations.length) drawElevation(); });
 
-// ── EXPORT ──
-async function exportPoster() {
-  const btn = document.getElementById('exportBtn');
-  const fmt = document.querySelector('input[name="exportFmt"]:checked').value;
-  const titleText = document.getElementById('posterTitle').textContent.trim() || 'trail-poster';
-  const safeName = titleText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// ── CONFIG ──
+const SQUARESPACE_PRODUCT_URL = 'https://YOUR-SITE.squarespace.com/store/custom-trail-poster';
 
-  btn.disabled = true;
-  btn.textContent = 'EXPORTING…';
+// Azure Blob Storage — SAS URL for direct browser upload
+// Container: gpx-uploads (create this in Azure Portal if it doesn't exist)
+const AZURE_ACCOUNT   = 'saframedtrails';
+const AZURE_CONTAINER = 'gpx-uploads';
+const AZURE_SAS_TOKEN = 'sv=2024-11-04&ss=b&srt=o&sp=rwctfx&se=2028-04-07T10:21:56Z&st=2026-04-07T02:06:56Z&spr=https&sig=fFUp6z0fEKMZABZ2wGowCUYj8Wfo9PSjhg0r6Saw5rg%3D';
 
-  try {
+// ── AZURE UPLOAD ──
+
+// Generate a folder name: YYYY-MM-DD_HHMMSS_Trail-Title
+function makeOrderFolder(titleText) {
+  const now    = new Date();
+  const date   = now.toISOString().slice(0, 10);                          // 2026-04-03
+  const time   = now.toTimeString().slice(0, 8).replace(/:/g, '');       // 143022
+  const slug   = titleText.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) || 'order';
+  return `${date}_${time}_${slug}`;
+}
+
+// Upload a single blob into the order folder
+async function uploadBlob(folder, filename, contentType, body) {
+  const blobPath  = `${folder}/${filename}`;
+  const uploadUrl = `https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${blobPath}?${AZURE_SAS_TOKEN}`;
+
+  const response = await fetch(uploadUrl, {
+    method : 'PUT',
+    headers: {
+      'x-ms-blob-type': 'BlockBlob',
+      'Content-Type'  : contentType,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Azure upload failed for ${filename} (${response.status}): ${err}`);
+  }
+
+  return `https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${blobPath}`;
+}
+
+// Upload all order files into a timestamped folder; returns { folderUrl, gpxUrl, detailsUrl, posterUrl }
+async function uploadOrderToAzure(folder, gpxFile, orderNoteText, uploadPoster) {
+  const results = {};
+
+  // 1 — order-details.txt
+  results.detailsUrl = await uploadBlob(
+    folder,
+    'order-details.txt',
+    'text/plain',
+    orderNoteText
+  );
+
+  // 2 — GPX file (if available)
+  if (gpxFile) {
+    const safeName = gpxFile.name.replace(/[^a-z0-9.\-_]/gi, '_');
+    results.gpxUrl = await uploadBlob(
+      folder,
+      safeName,
+      'application/gpx+xml',
+      gpxFile
+    );
+  }
+
+  // 3 — High-res poster PNG at 3x scale for print quality
+  if (uploadPoster) {
     const poster = document.getElementById('poster');
-    const origBorderRadius = poster.style.borderRadius;
-    const origBoxShadow = poster.style.boxShadow;
+    const origBR = poster.style.borderRadius;
+    const origBS = poster.style.boxShadow;
     poster.style.borderRadius = '0';
-    poster.style.boxShadow = 'none';
+    poster.style.boxShadow    = 'none';
 
-    const canvas = await html2canvas(poster, {
-      scale: 3,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      backgroundColor: '#ffffff'
+    const printCanvas = await html2canvas(poster, {
+      scale          : 3,
+      useCORS        : true,
+      allowTaint     : false,
+      logging        : false,
+      backgroundColor: '#ffffff',
     });
 
-    poster.style.borderRadius = origBorderRadius;
-    poster.style.boxShadow = origBoxShadow;
+    poster.style.borderRadius = origBR;
+    poster.style.boxShadow    = origBS;
 
-    if (fmt === 'png') {
-      const link = document.createElement('a');
-      link.download = `${safeName}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } else {
-      const { jsPDF } = window.jspdf;
-      const activeSize = document.querySelector('.size-btn.active');
-      const pw = activeSize ? parseFloat(activeSize.dataset.w) : 8.5;
-      const ph = activeSize ? parseFloat(activeSize.dataset.h) : 11;
-      const orientation = pw > ph ? 'landscape' : 'portrait';
-      const pdf = new jsPDF({ orientation, unit: 'in', format: [pw, ph] });
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pw, ph);
-      pdf.save(`${safeName}.pdf`);
+    const pngBlob = await new Promise(resolve => printCanvas.toBlob(resolve, 'image/png'));
+    results.posterUrl = await uploadBlob(
+      folder,
+      'poster-print.png',
+      'image/png',
+      pngBlob
+    );
+  }
+
+  results.folderUrl = `https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${folder}/`;
+  return results;
+}
+
+// ── PURCHASE FLOW ──
+let gpxFileRef = null; // set in processFile() when user uploads
+
+async function initiatePurchase() {
+  const btn = document.getElementById('purchaseBtn');
+
+  if (!gpxCoords.length) {
+    alert('Please upload a GPX file before ordering.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Preparing Preview…';
+
+  try {
+    // 1 — Capture poster screenshot
+    const poster = document.getElementById('poster');
+    const origBR = poster.style.borderRadius;
+    const origBS = poster.style.boxShadow;
+    poster.style.borderRadius = '0';
+    poster.style.boxShadow    = 'none';
+
+    const canvas = await html2canvas(poster, {
+      scale          : 2,
+      useCORS        : true,
+      allowTaint     : false,
+      logging        : false,
+      backgroundColor: '#ffffff',
+    });
+
+    poster.style.borderRadius = origBR;
+    poster.style.boxShadow    = origBS;
+
+    const previewDataURL = canvas.toDataURL('image/png');
+
+    // 2 — Gather poster config
+    const titleText    = document.getElementById('posterTitle').textContent.trim()    || 'My Trail';
+    const subtitleText = document.getElementById('posterSubtitle').textContent.trim() || '';
+    const activeSize   = document.querySelector('.size-btn.active');
+    const sizeLabel    = activeSize ? activeSize.querySelector('.size-label').textContent.trim() : '8.5 × 11"';
+    const activeStyle  = document.querySelector('.style-btn.active');
+    const styleLabel   = activeStyle ? activeStyle.textContent.trim() : 'Streets';
+    const distUnit     = useKm ? 'km' : 'mi';
+    const elevUnit     = useM  ? 'm'  : 'ft';
+    const distVal      = document.getElementById('statDist').textContent.trim();
+    const elevVal      = document.getElementById('statElev').textContent.trim();
+    const colorSwatch  = document.querySelector('.swatch.active');
+    const colorHex     = colorSwatch ? colorSwatch.dataset.color : routeColor;
+    const gpxFilename  = gpxFileRef ? gpxFileRef.name : '(none)';
+
+    // 3 — Build order note text (full multiline version for the .txt file)
+    const orderFolder  = makeOrderFolder(titleText);
+    const orderNoteFull = [
+      `Framed Trails — Order Details`,
+      `===============================`,
+      `Submitted:      ${new Date().toLocaleString()}`,
+      ``,
+      `POSTER`,
+      `  Title:          ${titleText}`,
+      subtitleText ? `  Subtitle:       ${subtitleText}` : '',
+      `  Print Size:     ${sizeLabel}`,
+      `  Map Style:      ${styleLabel}`,
+      `  Route Color:    ${colorHex}`,
+      `  Line Width:     ${lineWidthVal}px`,
+      ``,
+      `STATS`,
+      `  Distance:       ${distVal} ${distUnit}`,
+      `  Elevation Gain: ${elevVal} ${elevUnit}`,
+      ``,
+      `FILES`,
+      `  GPX File:       ${gpxFilename}`,
+      `  Azure Folder:   https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${orderFolder}/`,
+    ].filter(s => s !== null).join('\n');
+
+    // Compact version for clipboard / Squarespace URL param
+    const buildOrderNoteCompact = (gpxUrl) => [
+      `Title: ${titleText}`,
+      subtitleText ? `Subtitle: ${subtitleText}` : '',
+      `Size: ${sizeLabel}`,
+      `Map Style: ${styleLabel}`,
+      `Route Color: ${colorHex}`,
+      `Line Width: ${lineWidthVal}px`,
+      `Distance: ${distVal} ${distUnit}`,
+      `Elevation Gain: ${elevVal} ${elevUnit}`,
+      gpxUrl ? `GPX: ${gpxUrl}` : `GPX: ${gpxFilename}`,
+    ].filter(Boolean).join(' | ');
+
+    // 4 — Populate modal
+    document.getElementById('purchasePreviewImg').src             = previewDataURL;
+    document.getElementById('purchaseModalTitle').textContent     = titleText;
+    document.getElementById('purchaseModalSubtitle').textContent  = subtitleText || 'Custom Trail Poster';
+    document.getElementById('purchaseModalDetails').innerHTML = `
+      <strong>Print Size:</strong> ${sizeLabel}<br>
+      <strong>Map Style:</strong> ${styleLabel}<br>
+      <strong>Route Color:</strong>
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+                     background:${colorHex};vertical-align:middle;margin-right:3px;"></span>${colorHex}<br>
+      <strong>Distance:</strong> ${distVal} ${distUnit}
+      &nbsp;|&nbsp;
+      <strong>Elevation Gain:</strong> ${elevVal} ${elevUnit}<br>
+      <strong>GPX File:</strong> ${gpxFilename}
+    `;
+
+    // 5 — Show modal then upload all three files to Azure
+    const statusEl   = document.getElementById('uploadStatus');
+    const confirmBtn = document.getElementById('purchaseConfirmBtn');
+    let   gpxUrl     = null;
+
+    showPurchaseModal();
+    confirmBtn.disabled = true;
+
+    statusEl.className = 'upload-status';
+    statusEl.innerHTML = '⏳ Uploading files to Azure (1/3)…';
+
+    try {
+      const uploaded = await uploadOrderToAzure(orderFolder, gpxFileRef, orderNoteFull, true);
+      gpxUrl = uploaded.gpxUrl || null;
+
+      statusEl.className = 'upload-status ok';
+      statusEl.innerHTML = `✓ 3 files uploaded — folder: <code style="font-size:10px">${orderFolder}</code>`;
+    } catch (uploadErr) {
+      console.error('Azure upload error:', uploadErr);
+      statusEl.className = 'upload-status err';
+      statusEl.innerHTML = '⚠ Upload failed — order note will still be sent to Squarespace';
+    } finally {
+      confirmBtn.disabled = false;
     }
+
+    // 6 — Copy button (compact note)
+    const copyBtn = document.getElementById('copyDetailsBtn');
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(buildOrderNoteCompact(gpxUrl));
+        copyBtn.textContent = '✓ Copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.textContent = '📋 Copy order details to clipboard';
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      } catch {
+        copyBtn.textContent = '⚠ Copy failed — select manually';
+      }
+    };
+
+    // 7 — Confirm → open Squarespace with compact note in URL
+    confirmBtn.onclick = () => {
+      const note   = buildOrderNoteCompact(gpxUrl);
+      const variant = sizeLabel.includes('13') ? '13x19' : '8x11';
+      const params  = new URLSearchParams({ note, variant });
+      window.open(`${SQUARESPACE_PRODUCT_URL}?${params.toString()}`, '_blank');
+      hidePurchaseModal();
+    };
+
   } catch (err) {
-    console.error('Export failed:', err);
-    alert('Export failed — check the console for details.');
+    console.error('Purchase prep failed:', err);
+    alert('Something went wrong preparing your order preview. Check the console for details.');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'EXPORT POSTER';
+    btn.innerHTML = '<span>🛒</span> ORDER PRINT';
   }
 }
+
+function showPurchaseModal() {
+  document.getElementById('purchaseOverlay').classList.add('visible');
+}
+
+function hidePurchaseModal() {
+  document.getElementById('purchaseOverlay').classList.remove('visible');
+}
+
+document.getElementById('purchaseCancelBtn').addEventListener('click', hidePurchaseModal);
+document.getElementById('purchaseOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) hidePurchaseModal();
+});
 
 // ── PRINT SIZE ──
 const poster = document.getElementById('poster');
