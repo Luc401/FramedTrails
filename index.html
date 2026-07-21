@@ -561,11 +561,23 @@
   }
 
   .poster-subtitle {
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 500;
     letter-spacing: 3px;
-    color: #888;
+    color: #111;
     margin-top: 4px;
+  }
+
+  .poster-date {
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    color: #111;
+    margin-top: 3px;
+  }
+
+  .poster-date:empty {
+    display: none;
   }
 
   .map-container {
@@ -778,10 +790,26 @@
     <div class="field">
       <label>Title</label>
       <input type="text" id="titleInput" value="My Trail" placeholder="Trail name">
+      <div class="slider-row" style="margin-top:8px">
+        <input type="range" id="titleSize" min="20" max="80" value="42">
+        <span class="slider-val" id="titleSizeVal">42</span>
+      </div>
     </div>
     <div class="field">
       <label>Subtitle</label>
       <input type="text" id="subtitleInput" value="" placeholder="Location or region">
+      <div class="slider-row" style="margin-top:8px">
+        <input type="range" id="subtitleSize" min="10" max="40" value="20">
+        <span class="slider-val" id="subtitleSizeVal">20</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="text" id="dateInput" value="" placeholder="e.g. June 2026">
+      <div class="slider-row" style="margin-top:8px">
+        <input type="range" id="dateSize" min="8" max="30" value="15">
+        <span class="slider-val" id="dateSizeVal">15</span>
+      </div>
     </div>
   </div>
 
@@ -914,6 +942,7 @@
       <div class="poster-header">
         <div class="poster-title" id="posterTitle" contenteditable="true" spellcheck="false">My Trail</div>
         <div class="poster-subtitle" id="posterSubtitle" contenteditable="true" spellcheck="false">Upload a GPX to get started</div>
+        <div class="poster-date" id="posterDate" contenteditable="true" spellcheck="false"></div>
       </div>
       <div class="map-container">
         <div class="map-empty" id="mapEmpty">
@@ -1336,25 +1365,48 @@ function drawElevation() {
   ctx.fillStyle = grad; ctx.fill();
 
   // X axis distance labels (convert if needed)
-  ctx.fillStyle = '#aaa'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#aaa';
   ctx.font = '9px Microsoft Tai Le, sans-serif';
   const totalKm = calcDistanceKm(gpxCoords);
   const totalDisplay = useKm ? totalKm : totalKm * 0.621371;
   const steps = Math.min(6, Math.floor(totalDisplay));
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    ctx.fillText(Math.round(totalDisplay * t), pad.left + t * chartW, h - 3);
+    const x = pad.left + t * chartW;
+    ctx.textAlign = i === steps ? 'right' : i === 0 ? 'left' : 'center';
+    ctx.fillText(Math.round(totalDisplay * t), x, h - 3);
   }
 }
 
 // ── CONTROLS ──
-['titleInput', 'subtitleInput'].forEach(id => {
+['titleInput', 'subtitleInput', 'dateInput'].forEach(id => {
   document.getElementById(id).addEventListener('input', e => {
-    document.getElementById(id === 'titleInput' ? 'posterTitle' : 'posterSubtitle').textContent = e.target.value;
+    const targetMap = { titleInput: 'posterTitle', subtitleInput: 'posterSubtitle', dateInput: 'posterDate' };
+    document.getElementById(targetMap[id]).textContent = e.target.value;
   });
 });
 document.getElementById('posterTitle').addEventListener('input', e => { document.getElementById('titleInput').value = e.target.textContent; });
 document.getElementById('posterSubtitle').addEventListener('input', e => { document.getElementById('subtitleInput').value = e.target.textContent; });
+document.getElementById('posterDate').addEventListener('input', e => {
+  const val = e.target.textContent.trim();
+  document.getElementById('dateInput').value = val;
+  if (!val) e.target.textContent = ''; // ensure truly empty so :empty applies
+});
+
+// Font size sliders for title / subtitle / date
+const fontSizeMap = {
+  titleSize:    { target: 'posterTitle',    valEl: 'titleSizeVal' },
+  subtitleSize: { target: 'posterSubtitle', valEl: 'subtitleSizeVal' },
+  dateSize:     { target: 'posterDate',     valEl: 'dateSizeVal' },
+};
+Object.keys(fontSizeMap).forEach(id => {
+  const { target, valEl } = fontSizeMap[id];
+  document.getElementById(id).addEventListener('input', e => {
+    const px = e.target.value;
+    document.getElementById(target).style.fontSize = px + 'px';
+    document.getElementById(valEl).textContent = px;
+  });
+});
 
 document.querySelectorAll('.style-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1529,6 +1581,7 @@ async function initiatePurchase() {
     // 2 — Gather poster config
     const titleText    = document.getElementById('posterTitle').textContent.trim()    || 'My Trail';
     const subtitleText = document.getElementById('posterSubtitle').textContent.trim() || '';
+    const dateText     = document.getElementById('posterDate').textContent.trim()     || '';
     const activeSize   = document.querySelector('.size-btn.active');
     const sizeLabel    = activeSize ? activeSize.querySelector('.size-label').textContent.trim() : '8.5 × 11"';
     const activeStyle  = document.querySelector('.style-btn.active');
@@ -1551,6 +1604,7 @@ async function initiatePurchase() {
       `POSTER`,
       `  Title:          ${titleText}`,
       subtitleText ? `  Subtitle:       ${subtitleText}` : '',
+      dateText     ? `  Date:           ${dateText}`     : '',
       `  Print Size:     ${sizeLabel}`,
       `  Map Style:      ${styleLabel}`,
       `  Route Color:    ${colorHex}`,
@@ -1569,6 +1623,7 @@ async function initiatePurchase() {
     const buildOrderNoteCompact = (gpxUrl) => [
       `Title: ${titleText}`,
       subtitleText ? `Subtitle: ${subtitleText}` : '',
+      dateText     ? `Date: ${dateText}`         : '',
       `Size: ${sizeLabel}`,
       `Map Style: ${styleLabel}`,
       `Route Color: ${colorHex}`,
