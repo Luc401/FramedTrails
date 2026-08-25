@@ -1333,8 +1333,17 @@ const stravaPicker = document.getElementById('stravaPicker');
 const stravaActivitySelect = document.getElementById('stravaActivitySelect');
 const stravaLoadBtn = document.getElementById('stravaLoadBtn');
 
+// The poster builder is embedded in an iframe on framedtrails.com/diy/
+// (Squarespace), so the OAuth flow can't run as a top-level redirect inside
+// that frame — Strava's login page won't complete correctly nested inside
+// someone else's iframe. Instead, open it as a popup; the callback page
+// posts the session id back via postMessage and closes itself.
 stravaConnectBtn.addEventListener('click', () => {
-  window.location.href = `${STRAVA_API_BASE_URL}/auth/strava`;
+  window.open(
+    `${STRAVA_API_BASE_URL}/auth/strava`,
+    'stravaAuth',
+    'width=500,height=700'
+  );
 });
 
 stravaLoadBtn.addEventListener('click', () => {
@@ -1342,22 +1351,13 @@ stravaLoadBtn.addEventListener('click', () => {
   if (id) loadStravaActivity(id);
 });
 
-// On load, check whether we just came back from the Strava OAuth redirect
-// (Worker appends ?strava_session=<id>). If so, fetch the athlete's recent
-// activities and show a picker instead of the raw drop-zone flow.
-(function initStravaSession() {
-  const params = new URLSearchParams(window.location.search);
-  const session = params.get('strava_session');
-  if (!session) return;
-
-  sessionStorage.setItem('stravaSession', session);
-  // Clean the session id out of the visible URL.
-  params.delete('strava_session');
-  const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '');
-  window.history.replaceState({}, '', cleanUrl);
-
-  loadStravaActivities(session);
-})();
+window.addEventListener('message', (event) => {
+  if (event.origin !== STRAVA_API_BASE_URL) return;
+  if (event.data?.type === 'strava-connected' && event.data.session) {
+    sessionStorage.setItem('stravaSession', event.data.session);
+    loadStravaActivities(event.data.session);
+  }
+});
 
 async function loadStravaActivities(session) {
   stravaConnectLabel.textContent = 'Loading activities…';
