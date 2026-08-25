@@ -139,11 +139,17 @@
 
   .logo-mark {
     width: 36px; height: 36px;
-    background: var(--accent);
+    background: #fff;
     border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    overflow: hidden;
     flex-shrink: 0;
+  }
+
+  .logo-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .logo-text h1 {
@@ -350,6 +356,30 @@
   }
   .center-btn:hover { border-color: var(--accent); background: rgba(230,57,70,0.08); }
   .center-btn:active { transform: scale(0.98); }
+
+  /* Strava brand orange (#FC4C02), matching their "Connect with Strava" buttons */
+  .strava-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #FC4C02;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .strava-btn:hover { background: #e34402; }
+  .strava-btn:active { transform: scale(0.98); }
+  .strava-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+  .strava-btn svg { flex-shrink: 0; }
 
   /* Toggle Switch */
   .toggle-row {
@@ -885,7 +915,7 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <a class="logo-link" href="https://www.framedtrails.com/">
-      <div class="logo-mark">⛰</div>
+      <div class="logo-mark"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAIAAACzY+a1AAAABGdBTUEAALGPC/xhBQAACklpQ0NQc1JHQiBJRUM2MTk2Ni0yLjEAAEiJnVN3WJP3Fj7f92UPVkLY8LGXbIEAIiOsCMgQWaIQkgBhhBASQMWFiApWFBURnEhVxILVCkidiOKgKLhnQYqIWotVXDjuH9yntX167+3t+9f7vOec5/zOec8PgBESJpHmomoAOVKFPDrYH49PSMTJvYACFUjgBCAQ5svCZwXFAADwA3l4fnSwP/wBr28AAgBw1S4kEsfh/4O6UCZXACCRAOAiEucLAZBSAMguVMgUAMgYALBTs2QKAJQAAGx5fEIiAKoNAOz0ST4FANipk9wXANiiHKkIAI0BAJkoRyQCQLsAYFWBUiwCwMIAoKxAIi4EwK4BgFm2MkcCgL0FAHaOWJAPQGAAgJlCLMwAIDgCAEMeE80DIEwDoDDSv+CpX3CFuEgBAMDLlc2XS9IzFLiV0Bp38vDg4iHiwmyxQmEXKRBmCeQinJebIxNI5wNMzgwAABr50cH+OD+Q5+bk4eZm52zv9MWi/mvwbyI+IfHf/ryMAgQAEE7P79pf5eXWA3DHAbB1v2upWwDaVgBo3/ldM9sJoFoK0Hr5i3k4/EAenqFQyDwdHAoLC+0lYqG9MOOLPv8z4W/gi372/EAe/tt68ABxmkCZrcCjg/1xYW52rlKO58sEQjFu9+cj/seFf/2OKdHiNLFcLBWK8ViJuFAiTcd5uVKRRCHJleIS6X8y8R+W/QmTdw0ArIZPwE62B7XLbMB+7gECiw5Y0nYAQH7zLYwaC5EAEGc0Mnn3AACTv/mPQCsBAM2XpOMAALzoGFyolBdMxggAAESggSqwQQcMwRSswA6cwR28wBcCYQZEQAwkwDwQQgbkgBwKoRiWQRlUwDrYBLWwAxqgEZrhELTBMTgN5+ASXIHrcBcGYBiewhi8hgkEQcgIE2EhOogRYo7YIs4IF5mOBCJhSDSSgKQg6YgUUSLFyHKkAqlCapFdSCPyLXIUOY1cQPqQ28ggMor8irxHMZSBslED1AJ1QLmoHxqKxqBz0XQ0D12AlqJr0Rq0Hj2AtqKn0UvodXQAfYqOY4DRMQ5mjNlhXIyHRWCJWBomxxZj5Vg1Vo81Yx1YN3YVG8CeYe8IJAKLgBPsCF6EEMJsgpCQR1hMWEOoJewjtBK6CFcJg4Qxwicik6hPtCV6EvnEeGI6sZBYRqwm7iEeIZ4lXicOE1+TSCQOyZLkTgohJZAySQtJa0jbSC2kU6Q+0hBpnEwm65Btyd7kCLKArCCXkbeQD5BPkvvJw+S3FDrFiOJMCaIkUqSUEko1ZT/lBKWfMkKZoKpRzame1AiqiDqfWkltoHZQL1OHqRM0dZolzZsWQ8ukLaPV0JppZ2n3aC/pdLoJ3YMeRZfQl9Jr6Afp5+mD9HcMDYYNg8dIYigZaxl7GacYtxkvmUymBdOXmchUMNcyG5lnmA+Yb1VYKvYqfBWRyhKVOpVWlX6V56pUVXNVP9V5qgtUq1UPq15WfaZGVbNQ46kJ1Bar1akdVbupNq7OUndSj1DPUV+jvl/9gvpjDbKGhUaghkijVGO3xhmNIRbGMmXxWELWclYD6yxrmE1iW7L57Ex2Bfsbdi97TFNDc6pmrGaRZp3mcc0BDsax4PA52ZxKziHODc57LQMtPy2x1mqtZq1+rTfaetq+2mLtcu0W7eva73VwnUCdLJ31Om0693UJuja6UbqFutt1z+o+02PreekJ9cr1Dund0Uf1bfSj9Rfq79bv0R83MDQINpAZbDE4Y/DMkGPoa5hpuNHwhOGoEctoupHEaKPRSaMnuCbuh2fjNXgXPmasbxxirDTeZdxrPGFiaTLbpMSkxeS+Kc2Ua5pmutG003TMzMgs3KzYrMnsjjnVnGueYb7ZvNv8jYWlRZzFSos2i8eW2pZ8ywWWTZb3rJhWPlZ5VvVW16xJ1lzrLOtt1ldsUBtXmwybOpvLtqitm63Edptt3xTiFI8p0in1U27aMez87ArsmuwG7Tn2YfYl9m32zx3MHBId1jt0O3xydHXMdmxwvOuk4TTDqcSpw+lXZxtnoXOd8zUXpkuQyxKXdpcXU22niqdun3rLleUa7rrStdP1o5u7m9yt2W3U3cw9xX2r+00umxvJXcM970H08PdY4nHM452nm6fC85DnL152Xlle+70eT7OcJp7WMG3I28Rb4L3Le2A6Pj1l+s7pAz7GPgKfep+Hvqa+It89viN+1n6Zfgf8nvs7+sv9j/i/4XnyFvFOBWABwQHlAb2BGoGzA2sDHwSZBKUHNQWNBbsGLww+FUIMCQ1ZH3KTb8AX8hv5YzPcZyya0RXKCJ0VWhv6MMwmTB7WEY6GzwjfEH5vpvlM6cy2CIjgR2yIuB9pGZkX+X0UKSoyqi7qUbRTdHF09yzWrORZ+2e9jvGPqYy5O9tqtnJ2Z6xqbFJsY+ybuIC4qriBeIf4RfGXEnQTJAntieTE2MQ9ieNzAudsmjOc5JpUlnRjruXcorkX5unOy553PFk1WZB8OIWYEpeyP+WDIEJQLxhP5aduTR0T8oSbhU9FvqKNolGxt7hKPJLmnVaV9jjdO31D+miGT0Z1xjMJT1IreZEZkrkj801WRNberM/ZcdktOZSclJyjUg1plrQr1zC3KLdPZisrkw3keeZtyhuTh8r35CP5c/PbFWyFTNGjtFKuUA4WTC+oK3hbGFt4uEi9SFrUM99m/ur5IwuCFny9kLBQuLCz2Lh4WfHgIr9FuxYji1MXdy4xXVK6ZHhp8NJ9y2jLspb9UOJYUlXyannc8o5Sg9KlpUMrglc0lamUycturvRauWMVYZVkVe9ql9VbVn8qF5VfrHCsqK74sEa45uJXTl/VfPV5bdra3kq3yu3rSOuk626s91m/r0q9akHV0IbwDa0b8Y3lG19tSt50oXpq9Y7NtM3KzQM1YTXtW8y2rNvyoTaj9nqdf13LVv2tq7e+2Sba1r/dd3vzDoMdFTve75TsvLUreFdrvUV99W7S7oLdjxpiG7q/5n7duEd3T8Wej3ulewf2Re/ranRvbNyvv7+yCW1SNo0eSDpw5ZuAb9qb7Zp3tXBaKg7CQeXBJ9+mfHvjUOihzsPcw83fmX+39QjrSHkr0jq/dawto22gPaG97+iMo50dXh1Hvrf/fu8x42N1xzWPV56gnSg98fnkgpPjp2Snnp1OPz3Umdx590z8mWtdUV29Z0PPnj8XdO5Mt1/3yfPe549d8Lxw9CL3Ytslt0utPa49R35w/eFIr1tv62X3y+1XPK509E3rO9Hv03/6asDVc9f41y5dn3m978bsG7duJt0cuCW69fh29u0XdwruTNxdeo94r/y+2v3qB/oP6n+0/rFlwG3g+GDAYM/DWQ/vDgmHnv6U/9OH4dJHzEfVI0YjjY+dHx8bDRq98mTOk+GnsqcTz8p+Vv9563Or59/94vtLz1j82PAL+YvPv655qfNy76uprzrHI8cfvM55PfGm/K3O233vuO+638e9H5ko/ED+UPPR+mPHp9BP9z7nfP78L/eE8/stRzjPAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAJcEhZcwAALiMAAC4jAXilP3YAABHVSURBVHic7Z1pVFNXu8efBJIwJ4wCMihgbxWtA0hL6a1DlyO90GuX5QJa0doK9TpUKavW2kHr21bUXoelLnWJsqzTshdvi4guFPFVlAARMAhlkCGYBEggEAhJTsK5H85bahEshrPPYPP7pMnJ8/zDP/vsvc+eODiOgxU2w6VbgJXRYrWQ9VgtZD1WC1mP1ULWY7WQ9VgtZD1WC1mP1ULWY7WQ9VgtZD1WC1mP1ULWY7WQ9VgtZD1WC1mP1ULWY7WQ9VgtZD22dAsYFSUlJVwu19PT09/ff7hrFAqFTqcLDg6mUhiVsNLCW7duxcfHy+XyJ18cP348h8NpaGiws7OLjIx0dnbm8XhqtTo/Px8AgoODIyMjx44dGxkZGR4ePnbs2JGnu3btanLK2vCwsCNHDru5uZH8ZUYNh40z2CIiIoqLi5OTkxcvXszj8ZRKpUQiaW5uBoCQkBCtVnv+/Hm9Xm8wGOzt7dPS0jw9PY8fP15WVjYQgcfjRURE6HS6V1999fDhw8Mlys/PLygo+Oabb4j/1tXVBwcHIf5yzw/ONmQyGQAcOnTIgs92d3eLxeKDBw/GxcV5e3v7+fkRf4SYmJhff/21vr5erVYXFxcHBAQEBgYOlFRvb28AWL16NenfhRRYZqHZbH7ppZd8fHzICtjU1LR48WIu90/NOoFAAACenp55eXk6ne7kyZMAIJVKyUpKLhTVhWaz+eeff160aJGzs/No4kil0pqamuzsbLKEBQQEXL58GQCuX7/e0NCgUqm8vb2TkpJkMtlAEykoKAgAHj9+HBoaSlZeEqGoLkxLS0tPTweAqKgoLy+v6dOnT5w4USAQBAYGjhkzpq2tTSQSPaNVOQCGGfl8QV5e3ltvvYVe9R/MmjVLKpWq1Woqk44QKkrhvXv30tPTx4e87Oszpva3qrKysqysrKcvEwqFPj4+rq6uzc3NUVFRU6dO9fX1nTt3rl6vxzDMd6xfX58+N/cKAHR3d1Mg+0nGjh1bWlpKcdIRQkUp5PN5ru7eNb9VCV2ciFcMBoNSqTQajdXV1Q0NDf7+/nK5XCKR1NbWNjU1CYXCBw8ePCPgtm3btm/fjlr2k9jb28+bN++XX36hMukIQVsKtVptZWUlhpkWLn57wD8AIG6hADBhwoQhP9jU1OTu7q5Wq7OysogrpdIHTk5OQUHBtbW1ERERSGUPQiKR6PX6uLg4KpM+B4iaSbm5uTNnzhzIcunS/yFKRAFhYWG2trZ0qxgWJBYSXTcul5ucnJyZmSm5X4YiC2UcOnQIAB4+fEi3kKEhvy7MyspasmQJj8czGo3kRqaRiIiIlpaWuro6BwcHurUMhsyRiq6ursTExCVLlkyePPnhw4ckRqadzZs3KxQKjUZDt5ChILFE7969GwCOHTtGYkyGEB8fT+7fikTILIVKpRIAVq9eTWJMhnDx4sV3332XbhVDQ6aFHA6HxGiMAsOwJxvYjIJMC+vr6+3t7UkMyASUSuWcOXMAICAggG4tQ0Nm1765uVkoFJIYkAm8//77N2/evHbt2rx58+jWMjRklsJZs2a1traSGJAJyOVyDw8PxvoH5Fro6OiIs3AOwLOJi4tTqVSnTp2iW8jwkNi6vXr1KgDs2rWLxJhMYOXKlQCwZcsWuoUMDcl9na+//hpexK5hWloaACiVSrqFDAH53VWRSBQTE0N6WHohHhZ++eWXdAsZApKnAvf392s0GsZ2oSyGmFyDM7KmJ9lCs9kMAJWVleSGpR1imsHy5cvpFjIEJFvI4/GOHDly7ty5jRs3khuZXrKzswUCwXAD1PRC/qj9mjVrenp6UlNTExISKB5eR4ejo6PJZKJbxdAgWRZDtMIbG5tRBKeFpKQks9l84cIFuoUMARILS0uKASA45CUUwWlh5syZixYtiouLy8jIoFvLU6Bo5m7d+jkAmPtRxKaT0CnTAKC4WCyXy+nW8gdISuH9+/ftHZ25L9zQ087dRwFg5swIX1/fwMDAs2fP0q0IANGNVNWuErq4jPBitUbfqWXHLJuwKeOj/+M/N2365PDhwyKRKCEhgaj1aQZF0Z76yiu2try7Ysm2L7+SyZqfcWVlfedPVx61awwoZKCGKIU7duygVwYSC5cuXTrwE8nMzHzGlTmF8oq6ThQaqCE2NhYAbty4QaMGJBb29vbm5eWNGxcIAPX19ShSMISenp6JEycCQHp6Ol0aEM7KunXrFgBUVVWhS8EQFi5ciKhKGgkId7zw9fWF4Z+XdnQbdfp/Pe9oVPSik0EBxHILuqY+I1wWo9Pp4HcjB7+lNz+o1wSOsWtq1cvb+wJ8HMf5OKJTgprz588DgK0tPXtPICyFY8aMAYDCwsKn3xLwubOme43zdQEOJzRYGDXFA50M1FRUVOTm5p47d27Qam/KQJjVy8srPDz8008/ffotm9+7/bOmeb4SLEKngQJUKhXQVwQBEFfCREW4f/9+pFnoxWg0El0LupY+IW9HffTRRwCQl5eHOhG9+Pr6urm50ZIa+e1boVB4eHh4enqiTkQvYrG4o6Njx44d1KdGvtaew+GsX79+3759SLMwAQcHBx6P19XVRXFe5KXQy8urqakJdRYm8MEHH3R3d8fFxeXl5VGaGPWdGgCWLFmCOgsTMBgMKSkpxF+1qamJsrxoS+GWLVsAgLEr88iFz+cfOnTIYDAAwA8/fE9ZXoS9mdmzZxcUFOzbty8hIQFdFqbB5XAEAoGNLY+6lIhKN7Fo+/r164jiM5bly5YBQF+fnrKMSG6kGo0mNTU1MTFx7ty5KOIzGcyEAYCdnYCyjEgs5PP5PB6PeEb6d2Pjho0AIC4uoSwjEgsdHBzc3d0fPXqEIjjDefW11wAgffduyjKiapESW1QiCs5wYmNjL144T1k6VBa6uLj09rJ7INdi9uzZAwCZmZnUpENlodFotLOzQxSc4RC78a9YsYKacXxUFjo6Ov5NnqsNCbFZ9CeffEJBLlQWqlQqBu44Rxmurq7R0dHEFoqoQWVhRUVFdHQ0ouCs4NixYwCwatUq1ImQWNje3g4AzNxPnjJ8fHz279+fkZFRXl6ONBESC6urqwEgKioKRXAWkZiYCADFxcVIsyCxkJi19jcvhQBA7F9KHHOBDiQWnjlzhsvlvsAbI44QJycn+L1aQQcSC1NSUvr7+z/77DMUwVnEmjVrAGDDhg0nTqBcG4xoBOS7774DAJlMhig+8xGLiwDgy29+sLGxiYyMRJcI4cQLDocTFhaGLj7DCZsx3cZW8I+9mQBQXo7wjACEFt69excATp48iS4Fk9m5c2dCYqKHu1t4ONrfMdrpTyEhIUKhEGkKxrJ9+3aiQVdeXoE0EVoLc3NzAaClpQVpFqaRkZFBLLGYNm1abW0t6nRILCwrK/v444/PnDmj1+ttbGy2bt2KIgsz2bRpEwAsWLDg8uXLZrOZgoxkWqjVaq9evUp8hyeZM2cOiVkYi8lk2rBhAwAcOHCAyrxkTkIUi8ULFiwg/i2TyTAMO3nyZEtLy8qk90nMwkzu3Lkze/Zsk8l08ODBtWvXUpqbxJ8DsUXZx/+9UaFsHfQWZnrhtoL6HbFYPGPGDAAIDw+nZW8IMp/OEAOEoS8He4/xevL1JqWu8pFmuE89bu29J23X9rJj96AnaW9vX7BgQURERE1NzdGjR4uLi1E/Dh0acn8Rqamp8NQe1ub+/pIqVVFlu1Ld1//n0qhQ6e5J22VtvUWVbR3d1E2fHT0PHz50dXUFgBMnTtCrhOQJ+Xw+HwB4vD9NR+dyOGEvu//W3C1r65W19drzbWw4UNfS8/a/+7V3GpwceH6eDiIn/oO6jinBIicHPrmSEJGSktLZ2YkzYKtnMtcXmkwmHo83f/584rSDIenVmx639/XqjJpugwm47s78fxvn4mhnCwDtnfrKBo2H0M7B3rZNrfcQCUL8R3WCOlnojeYeHeYh+tNsrrS0tD179mAYRtcuCX9AYok2mUyxsbFubm4qlWok1ytUfYMaOVodVtXYVdeirajtzL0rV3cx4tZaWa/JL1EMepE41fv48eO0SHoSkuvCo0ePAkBr6+AWqQWU13Q8qO8cfZzRYzAO3UMHgDfeeINiMU9D8k3g/v37AODl5fWXV/4lrkIBZuoffZzRw+cN/VeKj4+/fft2fz/NIsm00Gw2Ewcxk4K/l4Md30bTw9zORk1NjZ+fH90qSLWwtbU1OzsbAJYtWyaVSkcf0MneVtbK0Fn9P/74Y2lpaX5+/gvVnMEwTCKR7Nq1i4h87dq1UQZUaQxlNR2kaCMXoi0THh5OtxAcRzRS0dfXN3/+fACQSCSjidOpNVY1dJGlikTKysoAQCgUdnV1Fdz659lzF2gUg3C8MDIyEgDEYrHFEeTtffmlrcM1CGnEZDJduXIFAAQCAQCMCwqhUQzaIV/itJicnBzLPm4y90sfaW5K2nKLFKXVjLujHj9+nDi7+GbBbRplIN93hjgR/tSpUxZH0BvNsjbdNbHyqlih7mLWRuzBwcF8vh29GqjYjjgpKQkAPv/888rKyp6eHovj1D/WXi1S1LVou3uwx2261o4+EkU+LxiGubu729jYyOWDH9xQDPI92Ah27tz5xRdfEP+2t7cXiUSTJk1auXIlsepg5PQZzOW1nQKejb3ABjgg4HG93OyIR6wUYzQaBQKBg4MD7YuZKbIQAORyeWFhYWNjo1QqVSgU5eXlxPHbsbGxKSkpA8P9z0VLe29vnwkzgYDHdRDYujjZOjtQt2fPlSs5ixdHvxYZVXjnNp2LD2i8A0il0lWrVhELDwQCwdKlS9VqtQVxNFpjk6KnvkVbVtvZKLf8Rv28EOuwp06b3t9P55wEOi0coKCggKgvHR0d+/osr+GUqj5pvYZEYc8Aw7Bt27YBwK70vdRkHA5GWEhAVCqjmcPfqOgpkqpb2nQl1R3XS5Sy1l4S5Q3Q0tIyadIk4h42fUbYTz+dRZFl5DDIQhzHif6yxfNOMVN/dVN3SVVHWW1nTXN30UOVskNHrsJLly4BgLOLcNOmzRknLe8pkQizLMRxPD09HQCSk5M//PBD4slAamqqZaGMmLm0Wm3ESHu4Q5w/uWjR27TWfYNhnIU4jicnJxO3qdDQ0BUrVgBAfHy8ZaEk1R1KNTndx/v3JQCwYsUqUqKRCBMtHARxdz148ODIP9KpNRZJ20urOsprO/UGckoh0f6cFDqFlGgkwgILcRyfN28eAOh0I63YFOq+y3da2jv1Ft/xHj16FB0dzeVy4+L+a+HChZMnh8a99x4ALH0vzsKIyGCHhTqdjljoVVhYOMKPFFepa2TdlqVbvnw5cScnjkTz8PTy8wsEgD17/8eygEhhh4U4jtfV1RHz3kd4aglm6s8rUda2PIeLer3+zJkzxLqyr776ymBg1iP14WCNhQSzZ8+GER9racDMuUXy5pH1Dk+fPk2UvDfffJNdx2ayzEIcxzkczuuvvz7Ci9s69f8sb//Ly9avXw8A8+fPz83NHZ06GmCfhevWrRv5o93uHqxIOuy8ZIlEEhsbS8xf+vbbb0kSSDXss7Curg4A1q1bp9Vq//Lizi5j2W+dQ771/ff/OkoiISGhogLtcniksM9CHMeJbXeDgoIwDHv2lSZzf0e3UafTPTkGIpFI3nnnHQDYvHkzYqVUwEoLcRxXKpUAcPr06ZFcPG9RjJ2dnVKp1Ov1xI5MAJCevhu1SGpgq4WHDx8eYQejz2AaNES6dy/Nw0PkQt2oPYkQkx4SExMHegLD0dPTExQ8QdfbfeJERk5OjkgkWrt27YQJE6jRSRF0/4YsgTgBY8gnNW1tbWlpaURVNyEkhPiOFGz+QiP0HSI8CnAcB4CcnBxitjEAFBUVpaWlNTc3NzY2Eq/MmjWnH8ddRG5Z/3vR39+fLqlUQPdvyEI2btwIAFOnTr1z586NGzcAgM/nz5gxIzk5ubm52WQy0S2QOthqIY7jBw4cCAwMJH6IMTExdMuhDVY2Z54kOzubw+H8nXfjZ72FVuhe3mhl1FgtZD1WC1mP1ULWY7WQ9VgtZD1WC1mP1ULWY7WQ9VgtZD1WC1mP1ULWY7WQ9VgtZD1WC1mP1ULW8/8Hi2W+BPptGAAAAABJRU5ErkJggg==" alt="Framed Trails"></div>
       <div class="logo-text">
         <h1>Framed Trails</h1>
         <p>Build your own Map<br>Upload GPX · Customize · Print</p>
@@ -905,6 +935,15 @@
     <input type="file" id="gpxFile" accept=".gpx" style="display:none">
     <div class="file-loaded" id="fileLoaded">
       <span>✓</span><span id="fileName"></span>
+    </div>
+    <button class="strava-btn" id="stravaConnectBtn" style="margin-top:10px">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-7 4 14 3-9 2 4h5"/></svg>
+      <span id="stravaConnectLabel">Connect with Strava</span>
+    </button>
+    <div id="stravaPicker" style="display:none; margin-top:10px">
+      <label>Choose an activity</label>
+      <select id="stravaActivitySelect" style="width:100%; background:var(--input-bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-family:inherit; font-size:12px; padding:8px 10px; margin-bottom:8px;"></select>
+      <button class="center-btn" id="stravaLoadBtn">Use This Activity</button>
     </div>
   </div>
 
@@ -1282,6 +1321,95 @@ function parseGPX(text) {
   renderMarkers();
   updateStats();
   drawElevation();
+}
+
+// ── STRAVA IMPORT ──
+// Update this once the Function App is deployed (see azure-functions-strava/README.md).
+const STRAVA_API_BASE_URL = 'https://fa-framedtrails-strava-f8ckcgdcczb7gxcn.canadacentral-01.azurewebsites.net';
+
+const stravaConnectBtn = document.getElementById('stravaConnectBtn');
+const stravaConnectLabel = document.getElementById('stravaConnectLabel');
+const stravaPicker = document.getElementById('stravaPicker');
+const stravaActivitySelect = document.getElementById('stravaActivitySelect');
+const stravaLoadBtn = document.getElementById('stravaLoadBtn');
+
+stravaConnectBtn.addEventListener('click', () => {
+  window.location.href = `${STRAVA_API_BASE_URL}/auth/strava`;
+});
+
+stravaLoadBtn.addEventListener('click', () => {
+  const id = stravaActivitySelect.value;
+  if (id) loadStravaActivity(id);
+});
+
+// On load, check whether we just came back from the Strava OAuth redirect
+// (Worker appends ?strava_session=<id>). If so, fetch the athlete's recent
+// activities and show a picker instead of the raw drop-zone flow.
+(function initStravaSession() {
+  const params = new URLSearchParams(window.location.search);
+  const session = params.get('strava_session');
+  if (!session) return;
+
+  sessionStorage.setItem('stravaSession', session);
+  // Clean the session id out of the visible URL.
+  params.delete('strava_session');
+  const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '');
+  window.history.replaceState({}, '', cleanUrl);
+
+  loadStravaActivities(session);
+})();
+
+async function loadStravaActivities(session) {
+  stravaConnectLabel.textContent = 'Loading activities…';
+  stravaConnectBtn.disabled = true;
+  try {
+    const res = await fetch(`${STRAVA_API_BASE_URL}/api/activities?session=${encodeURIComponent(session)}`);
+    if (!res.ok) throw new Error('Failed to load activities');
+    const activities = await res.json();
+
+    stravaActivitySelect.innerHTML = activities.map(a => {
+      const km = (a.distance / 1000).toFixed(1);
+      const date = new Date(a.date).toLocaleDateString();
+      return `<option value="${a.id}">${a.name} — ${km} km — ${date}</option>`;
+    }).join('');
+
+    stravaConnectBtn.style.display = 'none';
+    stravaPicker.style.display = 'block';
+  } catch (err) {
+    alert('Could not load Strava activities. Please try connecting again.');
+    console.error(err);
+  } finally {
+    stravaConnectLabel.textContent = 'Connect with Strava';
+    stravaConnectBtn.disabled = false;
+  }
+}
+
+async function loadStravaActivity(activityId) {
+  const session = sessionStorage.getItem('stravaSession');
+  if (!session) return;
+
+  stravaLoadBtn.textContent = 'Loading…';
+  stravaLoadBtn.disabled = true;
+  try {
+    const res = await fetch(
+      `${STRAVA_API_BASE_URL}/api/gpx?session=${encodeURIComponent(session)}&id=${encodeURIComponent(activityId)}`
+    );
+    if (!res.ok) throw new Error('Failed to fetch GPX');
+    const gpxText = await res.text();
+    const selectedName = stravaActivitySelect.selectedOptions[0]?.textContent || `strava-${activityId}`;
+    const file = new File([gpxText], `${selectedName.split(' — ')[0]}.gpx`, { type: 'application/gpx+xml' });
+
+    // Reuses the exact same path a manually dropped/browsed GPX file takes,
+    // so parsing, stats, elevation chart, and the Azure order upload all
+    // work unchanged.
+    processFile(file);
+  } catch (err) {
+    alert('Could not load that activity from Strava.');
+    console.error(err);
+  } finally {
+    stravaLoadBtn.textContent = 'Use This Activity';
+    stravaLoadBtn.disabled = false;
+  }
 }
 
 // ── DISTANCE / ELEVATION HELPERS ──
