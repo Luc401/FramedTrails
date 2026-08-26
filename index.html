@@ -11,6 +11,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
         integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
         crossorigin="anonymous"></script>
+<!-- No integrity hash here on purpose: Cloudflare serves this script dynamically
+     (content can vary per load as part of how Turnstile resists automation),
+     so pinning a hash would break it unpredictably. -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
 
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -583,6 +587,8 @@
   }
   .upload-status.ok { color: #4ade80; }
   .upload-status.err { color: var(--accent); }
+
+  .turnstile-widget { display: flex; justify-content: center; margin-bottom: 10px; }
 
   .purchase-actions { display: flex; gap: 10px; }
 
@@ -1184,6 +1190,7 @@
       <div class="copy-row">
         <button class="copy-details-btn" id="copyDetailsBtn">📋 Copy order details to clipboard</button>
       </div>
+      <div class="turnstile-widget" id="turnstileWidget"></div>
       <div class="upload-status" id="uploadStatus"></div>
       <div class="purchase-actions">
         <button class="btn-cancel-purchase" id="purchaseCancelBtn">Back</button>
@@ -1911,47 +1918,57 @@ function makeOrderFolder(titleText) {
   return `${date}_${time}_${slug}`;
 }
 
-// Upload a single order file via the Azure Function's upload proxy
-async function uploadBlob(folder, filename, contentType, body) {
+// Upload a single order file via the Azure Function's upload proxy.
+// `auth` is either { turnstileToken } (the real, single-use human-check
+// token — only good for one call) or { ticket } (a short-lived ticket handed
+// back by a previous call in this same order, since Cloudflare rejects a
+// replayed Turnstile token outright). Returns { url, ticket } — every
+// response carries a fresh ticket so the caller can chain it forward.
+async function uploadBlob(folder, filename, contentType, body, auth) {
   const uploadUrl = `${STRAVA_API_BASE_URL}/api/upload-order`
     + `?folder=${encodeURIComponent(folder)}&filename=${encodeURIComponent(filename)}`;
 
-  const response = await fetch(uploadUrl, {
-    method : 'POST',
-    headers: { 'Content-Type': contentType },
-    body,
-  });
+  const headers = { 'Content-Type': contentType };
+  if (auth?.turnstileToken) headers['X-Turnstile-Token'] = auth.turnstileToken;
+  else if (auth?.ticket) headers['X-Upload-Ticket'] = auth.ticket;
+
+  const response = await fetch(uploadUrl, { method: 'POST', headers, body });
 
   if (!response.ok) {
     const err = await response.text();
     throw new Error(`Order upload failed for ${filename} (${response.status}): ${err}`);
   }
 
-  const { url } = await response.json();
-  return url;
+  return response.json(); // { url, ticket }
 }
 
 // Upload all order files into a timestamped folder; returns { folderUrl, gpxUrl, detailsUrl, posterUrl }
-async function uploadOrderToAzure(folder, gpxFile, orderNoteText, uploadPoster) {
+async function uploadOrderToAzure(folder, gpxFile, orderNoteText, uploadPoster, turnstileToken) {
   const results = {};
 
-  // 1 — order-details.txt
-  results.detailsUrl = await uploadBlob(
+  // 1 — order-details.txt. Redeems the real (single-use) Turnstile token and
+  // gets a ticket back that covers the rest of this order's uploads.
+  const first = await uploadBlob(
     folder,
     'order-details.txt',
     'text/plain',
-    orderNoteText
+    orderNoteText,
+    { turnstileToken }
   );
+  results.detailsUrl = first.url;
+  const auth = { ticket: first.ticket };
 
   // 2 — GPX file (if available)
   if (gpxFile) {
     const safeName = gpxFile.name.replace(/[^a-z0-9.\-_]/gi, '_');
-    results.gpxUrl = await uploadBlob(
+    const r = await uploadBlob(
       folder,
       safeName,
       'application/gpx+xml',
-      gpxFile
+      gpxFile,
+      auth
     );
+    results.gpxUrl = r.url;
   }
 
   // 3 — High-res poster PNG at a fixed 300dpi target, independent of the
@@ -1960,12 +1977,14 @@ async function uploadOrderToAzure(folder, gpxFile, orderNoteText, uploadPoster) 
   if (uploadPoster) {
     const printCanvas = await capturePosterFixedRes(300, { includeWatermark: false });
     const pngBlob = await new Promise(resolve => printCanvas.toBlob(resolve, 'image/png'));
-    results.posterUrl = await uploadBlob(
+    const r = await uploadBlob(
       folder,
       'poster-print.png',
       'image/png',
-      pngBlob
+      pngBlob,
+      auth
     );
+    results.posterUrl = r.url;
   }
 
   results.folderUrl = `https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${folder}/`;
@@ -2024,6 +2043,60 @@ async function capturePosterFixedRes(targetDPI, { includeWatermark = true } = {}
 
 // ── PURCHASE FLOW ──
 let gpxFileRef = null; // set in processFile() when user uploads
+
+// ── TURNSTILE (human check before uploading an order to Azure) ──
+const TURNSTILE_SITE_KEY = '0x4AAAAAAEcYT1FIE62KHqpY';
+let turnstileWidgetId = null;
+let turnstileWaiters = []; // resolve fns waiting on the next solved token
+
+function onTurnstileVerified(token) {
+  const waiters = turnstileWaiters;
+  turnstileWaiters = [];
+  waiters.forEach(resolve => resolve(token));
+}
+
+function onTurnstileError() {
+  const waiters = turnstileWaiters;
+  turnstileWaiters = [];
+  waiters.forEach(resolve => resolve(null));
+}
+
+// Renders the widget the first time the purchase modal opens; every
+// subsequent order resets the same widget for a fresh (still single-use)
+// token instead of re-rendering from scratch.
+function primeTurnstile() {
+  if (!window.turnstile) return; // script still loading; waitForTurnstileToken() below handles it
+  if (turnstileWidgetId === null) {
+    turnstileWidgetId = turnstile.render('#turnstileWidget', {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: onTurnstileVerified,
+      'error-callback': onTurnstileError,
+      'expired-callback': onTurnstileError,
+    });
+  } else {
+    turnstile.reset(turnstileWidgetId);
+  }
+}
+
+function waitForTurnstileToken() {
+  return new Promise(resolve => {
+    turnstileWaiters.push(resolve);
+    // Script may still be loading (no async/defer, but be defensive) —
+    // poll briefly for window.turnstile rather than assume it's ready.
+    if (!window.turnstile) {
+      const start = Date.now();
+      const poll = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(poll);
+          primeTurnstile();
+        } else if (Date.now() - start > 10000) {
+          clearInterval(poll);
+          onTurnstileError();
+        }
+      }, 200);
+    }
+  });
+}
 
 async function initiatePurchase() {
   const btn = document.getElementById('purchaseBtn');
@@ -2135,18 +2208,23 @@ async function initiatePurchase() {
       <strong>GPX File:</strong> ${gpxFilename}
     `;
 
-    // 5 — Show modal then upload all three files to Azure
+    // 5 — Show modal, prove human, then upload all three files to Azure
     const statusEl   = document.getElementById('uploadStatus');
     const confirmBtn = document.getElementById('purchaseConfirmBtn');
 
     showPurchaseModal();
     confirmBtn.disabled = true;
+    primeTurnstile();
 
     statusEl.className = 'upload-status';
-    statusEl.innerHTML = '⏳ Uploading files to Azure (1/3)…';
+    statusEl.innerHTML = '⏳ Verifying you\'re human…';
 
     try {
-      await uploadOrderToAzure(orderFolder, gpxFileRef, orderNoteFull, true);
+      const turnstileToken = await waitForTurnstileToken();
+      if (!turnstileToken) throw new Error('Human verification failed or timed out');
+
+      statusEl.innerHTML = '⏳ Uploading files to Azure (1/3)…';
+      await uploadOrderToAzure(orderFolder, gpxFileRef, orderNoteFull, true, turnstileToken);
 
       statusEl.className = 'upload-status ok';
       statusEl.innerHTML = `✓ 3 files uploaded — folder: <code style="font-size:10px">${orderFolder}</code>`;
