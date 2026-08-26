@@ -782,112 +782,6 @@
 
   .stat-unit { font-size: calc(11px * var(--poster-scale)); color: #888; margin-left: calc(2px * var(--poster-scale)); }
 
-  /* CAPTCHA */
-  .captcha-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .captcha-overlay.visible { opacity: 1; pointer-events: all; }
-
-  .captcha-box {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 28px 28px 24px;
-    width: 300px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    transform: translateY(8px);
-    transition: transform 0.2s;
-  }
-  .captcha-overlay.visible .captcha-box { transform: translateY(0); }
-
-  .captcha-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-
-  .captcha-icon {
-    width: 32px; height: 32px;
-    background: rgba(230,57,70,0.15);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-  }
-
-  .captcha-header h2 { font-family: 'Microsoft Tai Le', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--text); }
-  .captcha-header p { font-size: 11px; color: var(--muted); margin-top: 1px; }
-
-  .captcha-question {
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    text-align: center;
-    margin-bottom: 14px;
-  }
-
-  .captcha-question .math { font-family: 'Microsoft Tai Le', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--text); }
-  .captcha-question .math span { color: var(--accent); }
-
-  .captcha-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-
-  .captcha-input-row input {
-    flex: 1;
-    background: var(--input-bg);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: 'Microsoft Tai Le', sans-serif;
-    font-size: 22px;
-    padding: 8px 12px;
-    outline: none;
-    text-align: center;
-    transition: border-color 0.15s;
-  }
-  .captcha-input-row input:focus { border-color: var(--accent); }
-  .captcha-input-row input.error { border-color: #e63946; animation: shake 0.3s; }
-
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-6px); }
-    75% { transform: translateX(6px); }
-  }
-
-  .captcha-submit {
-    flex-shrink: 0;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: var(--radius);
-    padding: 8px 16px;
-    font-family: 'Microsoft Tai Le', sans-serif;
-    font-size: 15px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .captcha-submit:hover { background: #c62d39; }
-
-  .captcha-error { font-size: 11px; color: var(--accent); text-align: center; min-height: 16px; margin-bottom: 4px; }
-
-  .captcha-cancel {
-    width: 100%;
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-family: inherit;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 6px;
-    transition: color 0.15s;
-  }
-  .captcha-cancel:hover { color: var(--text); }
-
   .map-empty {
     position: absolute;
     inset: 0;
@@ -1157,28 +1051,6 @@
   </div>
 </main>
 
-<!-- CAPTCHA MODAL -->
-<div class="captcha-overlay" id="captchaOverlay">
-  <div class="captcha-box">
-    <div class="captcha-header">
-      <div class="captcha-icon">🔒</div>
-      <div>
-        <h2>Verify You're Human</h2>
-        <p>Solve the puzzle to upload your file</p>
-      </div>
-    </div>
-    <div class="captcha-question">
-      <div class="math" id="captchaMath"></div>
-    </div>
-    <div class="captcha-input-row">
-      <input type="number" id="captchaAnswer" placeholder="?" autocomplete="off">
-      <button class="captcha-submit" id="captchaSubmit">OK</button>
-    </div>
-    <div class="captcha-error" id="captchaError"></div>
-    <button class="captcha-cancel" id="captchaCancel">Cancel</button>
-  </div>
-</div>
-
 <!-- PURCHASE PREVIEW MODAL -->
 <div class="purchase-overlay" id="purchaseOverlay">
   <div class="purchase-box">
@@ -1236,67 +1108,18 @@ map = new mapboxgl.Map({
   preserveDrawingBuffer: true
 });
 
-// ── CAPTCHA ──
-let captchaCorrectAnswer = 0, pendingFile = null, captchaMode = 'click';
-
-function generateCaptcha() {
-  const ops = ['+', '-', '×'];
-  const op = ops[Math.floor(Math.random() * ops.length)];
-  let a, b;
-  if (op === '+') { a = Math.floor(Math.random() * 20) + 1; b = Math.floor(Math.random() * 20) + 1; captchaCorrectAnswer = a + b; }
-  else if (op === '-') { a = Math.floor(Math.random() * 20) + 10; b = Math.floor(Math.random() * a) + 1; captchaCorrectAnswer = a - b; }
-  else { a = Math.floor(Math.random() * 9) + 2; b = Math.floor(Math.random() * 9) + 2; captchaCorrectAnswer = a * b; }
-  document.getElementById('captchaMath').innerHTML = `${a} <span>${op}</span> ${b} = ?`;
-}
-
-function showCaptcha(mode, file) {
-  captchaMode = mode; pendingFile = file || null;
-  generateCaptcha();
-  document.getElementById('captchaAnswer').value = '';
-  document.getElementById('captchaError').textContent = '';
-  document.getElementById('captchaAnswer').classList.remove('error');
-  document.getElementById('captchaOverlay').classList.add('visible');
-  setTimeout(() => document.getElementById('captchaAnswer').focus(), 200);
-}
-
-function hideCaptcha() {
-  document.getElementById('captchaOverlay').classList.remove('visible');
-  pendingFile = null;
-}
-
-document.getElementById('captchaSubmit').addEventListener('click', verifyCaptcha);
-document.getElementById('captchaAnswer').addEventListener('keydown', e => { if (e.key === 'Enter') verifyCaptcha(); });
-document.getElementById('captchaCancel').addEventListener('click', hideCaptcha);
-document.getElementById('captchaOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) hideCaptcha(); });
-
-function verifyCaptcha() {
-  const val = parseInt(document.getElementById('captchaAnswer').value);
-  if (val === captchaCorrectAnswer) {
-    hideCaptcha();
-    if (captchaMode === 'click') gpxFileInput.click();
-    else if (captchaMode === 'drop' && pendingFile) processFile(pendingFile);
-  } else {
-    const input = document.getElementById('captchaAnswer');
-    document.getElementById('captchaError').textContent = 'Incorrect — try again!';
-    input.classList.add('error');
-    input.value = '';
-    setTimeout(() => input.classList.remove('error'), 400);
-    generateCaptcha();
-  }
-}
-
 // ── GPX UPLOAD ──
 const dropZone = document.getElementById('dropZone');
 const gpxFileInput = document.getElementById('gpxFile');
 
-dropZone.addEventListener('click', () => showCaptcha('click', null));
+dropZone.addEventListener('click', () => gpxFileInput.click());
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
   const file = e.dataTransfer.files[0];
-  if (file) showCaptcha('drop', file);
+  if (file) processFile(file);
 });
 
 gpxFileInput.addEventListener('change', e => {
