@@ -943,7 +943,7 @@
     <div id="stravaPicker" style="display:none; margin-top:10px">
       <label>Choose an activity</label>
       <select id="stravaActivitySelect" style="width:100%; background:var(--input-bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-family:inherit; font-size:12px; padding:8px 10px; margin-bottom:8px;"></select>
-      <button class="center-btn" id="stravaLoadBtn">Use This Activity</button>
+      <button class="strava-btn" id="stravaLoadBtn">Use This Activity</button>
     </div>
   </div>
 
@@ -1882,7 +1882,7 @@ document.querySelectorAll('.size-btn, .style-btn').forEach(btn => {
 window.addEventListener('resize', () => { if (gpxElevations.length) drawElevation(); });
 
 // ── CONFIG ──
-const SQUARESPACE_PRODUCT_URL = 'https://YOUR-SITE.squarespace.com/store/custom-trail-poster';
+const SQUARESPACE_PRODUCT_URL = 'https://www.framedtrails.com/shop/p/custom-print';
 
 // Azure Blob Storage — SAS URL for direct browser upload
 // Container: gpx-uploads (create this in Azure Portal if it doesn't exist)
@@ -2168,7 +2168,7 @@ async function initiatePurchase() {
     // 7 — Confirm → open Squarespace with compact note in URL
     confirmBtn.onclick = () => {
       const note   = buildOrderNoteCompact(gpxUrl);
-      const variant = sizeLabel.includes('13') ? '13x19' : '8x11';
+      const variant = sizeLabel.includes('13') ? '13x19' : '8.5x11';
       const params  = new URLSearchParams({ note, variant });
       window.open(`${SQUARESPACE_PRODUCT_URL}?${params.toString()}`, '_blank');
       hidePurchaseModal();
