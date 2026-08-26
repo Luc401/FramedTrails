@@ -1884,11 +1884,13 @@ window.addEventListener('resize', () => { if (gpxElevations.length) drawElevatio
 // ── CONFIG ──
 const SQUARESPACE_PRODUCT_URL = 'https://www.framedtrails.com/shop/p/custom-print';
 
-// Azure Blob Storage — SAS URL for direct browser upload
-// Container: gpx-uploads (create this in Azure Portal if it doesn't exist)
+// Order files (GPX / order-details.txt / poster PNG) are uploaded via the
+// Azure Function's own /api/upload-order endpoint (STRAVA_API_BASE_URL,
+// same Function App as the Strava integration above), not a client-side
+// SAS token — the Function writes to Blob using its managed identity, so
+// no storage credential is ever shipped to the browser.
 const AZURE_ACCOUNT   = 'saframedtrails';
 const AZURE_CONTAINER = 'gpx-uploads';
-const AZURE_SAS_TOKEN = 'sv=2024-11-04&ss=b&srt=o&sp=rwctfx&se=2028-04-07T10:21:56Z&st=2026-04-07T02:06:56Z&spr=https&sig=fFUp6z0fEKMZABZ2wGowCUYj8Wfo9PSjhg0r6Saw5rg%3D';
 
 // ── AZURE UPLOAD ──
 
@@ -1901,26 +1903,24 @@ function makeOrderFolder(titleText) {
   return `${date}_${time}_${slug}`;
 }
 
-// Upload a single blob into the order folder
+// Upload a single order file via the Azure Function's upload proxy
 async function uploadBlob(folder, filename, contentType, body) {
-  const blobPath  = `${folder}/${filename}`;
-  const uploadUrl = `https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${blobPath}?${AZURE_SAS_TOKEN}`;
+  const uploadUrl = `${STRAVA_API_BASE_URL}/api/upload-order`
+    + `?folder=${encodeURIComponent(folder)}&filename=${encodeURIComponent(filename)}`;
 
   const response = await fetch(uploadUrl, {
-    method : 'PUT',
-    headers: {
-      'x-ms-blob-type': 'BlockBlob',
-      'Content-Type'  : contentType,
-    },
+    method : 'POST',
+    headers: { 'Content-Type': contentType },
     body,
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Azure upload failed for ${filename} (${response.status}): ${err}`);
+    throw new Error(`Order upload failed for ${filename} (${response.status}): ${err}`);
   }
 
-  return `https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${blobPath}`;
+  const { url } = await response.json();
+  return url;
 }
 
 // Upload all order files into a timestamped folder; returns { folderUrl, gpxUrl, detailsUrl, posterUrl }
