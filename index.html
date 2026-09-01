@@ -1720,7 +1720,13 @@ document.querySelectorAll('.size-btn, .style-btn').forEach(btn => {
 window.addEventListener('resize', () => { if (gpxElevations.length) drawElevation(); });
 
 // ── CONFIG ──
-const SQUARESPACE_PRODUCT_URL = 'https://www.framedtrails.com/shop/p/custom-print';
+// Two size-specific Squarespace product pages (replaced the old single
+// /custom-print page that used a Size variant dropdown). The poster builder
+// sends the customer straight to the page matching their chosen print size.
+const SQUARESPACE_PRODUCT_URLS = {
+  '8.5x11': 'https://www.framedtrails.com/shop/p/custom-print8x11',
+  '13x19':  'https://www.framedtrails.com/shop/p/custom-print13x19',
+};
 
 // Order files (GPX / order-details.txt / poster PNG) are uploaded via the
 // Azure Function's own /api/upload-order endpoint (STRAVA_API_BASE_URL,
@@ -2075,12 +2081,15 @@ async function initiatePurchase() {
       }
     };
 
-    // 7 — Confirm → open Squarespace with compact note in URL
+    // 7 — Confirm → open the size-specific Squarespace product page with the
+    //     compact note in the URL. `variant` is still sent so the page's Code
+    //     Injection auto-selects the (single) Size option and the customer
+    //     doesn't hit Squarespace's "Select Size" validation.
     confirmBtn.onclick = () => {
       const note   = buildOrderNoteCompact();
-      const variant = sizeLabel.includes('13') ? '13x19' : '8.5x11';
-      const params  = new URLSearchParams({ note, variant });
-      window.open(`${SQUARESPACE_PRODUCT_URL}?${params.toString()}`, '_blank');
+      const size   = sizeLabel.includes('13') ? '13x19' : '8.5x11';
+      const params = new URLSearchParams({ note, variant: size });
+      window.open(`${SQUARESPACE_PRODUCT_URLS[size]}?${params.toString()}`, '_blank');
       hidePurchaseModal();
     };
 
